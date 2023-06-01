@@ -1,4 +1,4 @@
-module example.com/rocketchat-term
+module github.com/c-fandango/rocketchat-term
 
 go 1.20
 
