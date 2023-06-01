@@ -3,15 +3,15 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
+	"github.com/c-fandango/rocketchat-term/utils"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"golang.org/x/term"
 	"log"
-	"math/rand"
 	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -33,9 +33,8 @@ type messageSchema struct {
 	Sender userSchema `json:"u"`
 }
 
-type roomSubSchema struct {
-	Message    string `json:"msg"`
-	ID         string `json:"id"`
+type subscription struct {
+	wssResponse
 	Collection string `json:"collection"`
 	Fields     struct {
 		EventName string          `json:"eventName"`
@@ -48,22 +47,171 @@ type roomSchema struct {
 	ReadOnly  bool     `json:"ro"`
 	Name      string   `json:"name"`
 	Usernames []string `json:"usernames"`
-        Messages []messageSchema
+	Messages  []messageSchema
 }
 
-type roomsSchema struct {
-	Message string `json:"msg"`
+type errorResponse struct {
+	Error   int    `json:"error"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
+}
+
+type wssResponse struct {
+	ID      string        `json:"id"`
+	Message string        `json:"msg"`
+	Error   errorResponse `json:"error"`
+	//do i need this?
+	Session string `json:"session"`
+}
+
+type wssRequest struct {
 	ID      string `json:"id"`
-	Result  struct {
+	Message string `json:"msg"`
+	Method  string `json:"method"`
+	Name    string `json:"name"`
+}
+
+// add match room id method
+type rooms struct {
+	wssResponse
+	Result struct {
 		Rooms []roomSchema `json:"update"`
 	} `json:"result"`
 }
 
-type wssResponse struct {
-	Message string `json:"msg"`
-	Session string `json:"session"`
-	Version string `json:"version"`
-	Support []int  `json:"support"`
+func (s *subscription) handleResponse(response []byte, allRooms []roomSchema) error {
+	json.Unmarshal(response, s)
+	for _, message := range s.Fields.Messages {
+		if message.Content == "" {
+			continue
+		}
+
+		var roomName string
+		for _, room := range allRooms {
+			if room.ID == message.RoomID {
+				roomName = room.Name
+				break
+			}
+		}
+		printMessage(roomName, message.Sender.Name, message.Content, message.Timestamp.Timestamp)
+	}
+
+	if s.Error != (errorResponse{}) {
+		return errors.New("failed to fetch room data")
+	}
+
+	return nil
+}
+
+func (s *subscription) constructRequest(roomID string) string {
+	//fix this bug? rocket always responds with "id: id" regargless
+	//s.ID = utils.RandID(5)
+	s.ID = "id"
+
+	request := struct {
+		wssRequest
+		Params []string `json:"params"`
+	}{
+		wssRequest: wssRequest{
+			ID:      s.ID,
+			Message: "sub",
+			Name:    "stream-room-messages",
+		},
+		Params: []string{
+			roomID,
+			"false",
+		},
+	}
+	message, _ := json.Marshal(request)
+
+	return string(message)
+}
+
+func (r *rooms) handleResponse(response []byte) error {
+	json.Unmarshal(response, r)
+
+	if r.Error != (errorResponse{}) {
+		return errors.New("failed to fetch room data")
+	}
+
+	for i, room := range r.Result.Rooms {
+		if room.Name == "" {
+			r.Result.Rooms[i].Name = strings.Join(room.Usernames, ", ")
+		}
+	}
+
+	return nil
+}
+
+func (r *rooms) constructRequest() string {
+	r.ID = utils.RandID(5)
+
+	request := struct {
+		wssRequest
+		Params []map[string]int `json:"params"`
+	}{
+		wssRequest: wssRequest{
+			ID:      r.ID,
+			Message: "method",
+			Method:  "rooms/get",
+		},
+		Params: []map[string]int{
+			map[string]int{
+				"$date": 0,
+			},
+		},
+	}
+	message, _ := json.Marshal(request)
+
+	return string(message)
+}
+
+func (w *wssResponse) authenticate(username string, password string) string {
+
+	type ldapParams struct {
+		Ldap        bool              `json:"ldap"`
+		Username    string            `json:"username"`
+		LdapPass    string            `json:"ldapPass"`
+		LdapOptions map[string]string `json:"ldapOptions"`
+	}
+
+	w.ID = utils.RandID(5)
+
+	request := struct {
+		wssRequest
+		Params []ldapParams `json:"params"`
+	}{
+		wssRequest: wssRequest{
+			ID:      w.ID,
+			Message: "method",
+			Method:  "login",
+		},
+		Params: []ldapParams{
+			ldapParams{
+				Ldap:        true,
+				Username:    username,
+				LdapPass:    password,
+				LdapOptions: map[string]string{},
+			},
+		}}
+
+	message, _ := json.Marshal(request)
+
+	return string(message)
+
+}
+
+// TODO cache the token
+func (w *wssResponse) handleResponse(response []byte) error {
+	json.Unmarshal(response, w)
+
+	if w.Error != (errorResponse{}) {
+		return errors.New("authorisation failed")
+	}
+
+	fmt.Println("authenticated")
+
+	return nil
 }
 
 func getCredentials() (string, string, string, error) {
@@ -106,10 +254,11 @@ func printMessage(room string, user string, content string, timestamp int) {
 	user = userColour + user + resetColour
 	room = roomColour + blackText + " " + room + " " + resetColour
 
-        ts:=time.UnixMilli(int64(timestamp))
+	ts := time.UnixMilli(int64(timestamp))
 	timePretty := ts.Format(time.Kitchen)
 
-	//fmt.Println("        -------")
+	timePretty = utils.PadLeft(timePretty, "0", 7)
+
 	fmt.Println("       ", timePretty, "     ", room, "      ", user, "     ", content)
 }
 
@@ -141,16 +290,17 @@ func main() {
 
 	defer c.Close()
 
-	connectMessage := "{\"msg\": \"connect\",\"version\": \"1\",\"support\": [\"1\"]}"
-	pongMessage := "{\"msg\": \"pong\"}"
-	var sessionId string
+	var auth wssResponse
+	var roomSub subscription
+	var allRooms rooms
 
-	state := "resting"
-	rooms := []roomSchema{}
 	done := make(chan struct{})
 
 	go func() {
 		defer close(done)
+		connectMessage := `{"msg": "connect","version": "1","support": ["1"]}`
+		messageOut <- connectMessage
+
 		for {
 			_, response, err := c.ReadMessage()
 			if err != nil {
@@ -158,71 +308,50 @@ func main() {
 				return
 			}
 			log.Printf("recv: %s", response)
-			fmt.Println("recv: %s", string(response))
-
 
 			var data wssResponse
 
 			json.Unmarshal(response, &data)
 
-			if data.Message == "" && state == "resting" {
-				state = "pre-connect"
-				messageOut <- connectMessage
+			if data.Message == "connected" {
+				messageOut <- auth.authenticate(username, password)
+
+			} else if data.ID == auth.ID && data.Message == "result" {
+				err := auth.handleResponse(response)
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+
+				messageOut <- allRooms.constructRequest()
+
+			} else if data.ID == allRooms.ID && data.Message == "result" {
+				err := allRooms.handleResponse(response)
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+
+				messageOut <- roomSub.constructRequest("__my_messages__")
+
+			} else if data.ID == roomSub.ID && data.Message == "changed" {
+				err := roomSub.handleResponse(response, allRooms.Result.Rooms)
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+
 			} else if data.Message == "ping" {
-				log.Printf("ping message recieved: %s", data.Message)
-				messageOut <- pongMessage
-			} else if data.Message == "connected" && state == "pre-connect" {
-				state = "connected"
-				sessionId = data.Session
-				log.Printf("connected!, session id: %s", sessionId)
-				authMessage := "{\"msg\": \"method\",\"method\": \"login\",\"id\":\"42\",\"params\":[{\"ldap\": true,   \"username\": \"" + username + "\",\"ldapPass\": \"" + password + "\",\"ldapOptions\": {} }]}"
-				messageOut <- authMessage
-			} else if data.Message == "result" && state == "connected" {
-				state = "authenticated"
-				fmt.Println("\nauthenticated!")
-				roomRequest := "{\"msg\": \"method\",\"method\": \"rooms/get\",\"id\": \"42\",\"params\": [ { \"$date\": 0} ]}"
-				messageOut <- roomRequest
-			} else if data.Message == "result" && state == "authenticated" {
-				state = "rooms fetched"
-				var roomData roomsSchema
-				json.Unmarshal(response, &roomData)
-				for _, room := range roomData.Result.Rooms {
-					if room.Name == "" {
-						room.Name = strings.Join(room.Usernames, ", ")
-					}
-					rooms = append(rooms, room)
-				}
-				updateRequest := "{\"msg\":\"sub\",\"id\":\"" + strconv.Itoa(rand.Int()) + "\",\"name\":\"stream-room-messages\",\"params\":[\"" + "__my_messages__" + "\", false]}"
-				messageOut <- updateRequest
-			} else if data.Message == "ready" && state == "rooms fetched" {
-				state = "subscribed"
-			} else if data.Message == "changed" && state == "subscribed" {
-				var roomSubData roomSubSchema
-				json.Unmarshal(response, &roomSubData)
-
-				for _, message := range roomSubData.Fields.Messages {
-
-					if message.Content != "" {
-						var roomName string
-						for _, room := range rooms {
-							if room.ID == message.RoomID {
-								roomName = room.Name
-								break
-							}
-						}
-						printMessage(roomName, message.Sender.Name, message.Content, message.Timestamp.Timestamp)
-					}
-				}
-			} else {
-				log.Printf("next thing")
+				messageOut <- `{"msg": "pong"}`
 			}
 		}
 	}()
 
-        eventLoop:
+eventLoop:
 	for {
 		select {
 		case <-done:
+			break eventLoop
 		case m := <-messageOut:
 
 			log.Printf("Send Message %s", m)
@@ -243,7 +372,7 @@ func main() {
 			case <-done:
 			case <-time.After(time.Second):
 			}
-                        break eventLoop
+			break eventLoop
 		}
 	}
 }
