@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"github.com/c-fandango/rocketchat-term/utils"
 	"fmt"
+	"github.com/c-fandango/rocketchat-term/utils"
 	"github.com/gorilla/websocket"
 	"golang.org/x/term"
 	"log"
@@ -33,15 +33,6 @@ type messageSchema struct {
 	Sender userSchema `json:"u"`
 }
 
-type subscription struct {
-	wssResponse
-	Collection string `json:"collection"`
-	Fields     struct {
-		EventName string          `json:"eventName"`
-		Messages  []messageSchema `json:"args"`
-	} `json:"fields"`
-}
-
 type roomSchema struct {
 	ID        string   `json:"_id"`
 	ReadOnly  bool     `json:"ro"`
@@ -56,14 +47,6 @@ type errorResponse struct {
 	Message string `json:"message"`
 }
 
-type wssResponse struct {
-	ID      string        `json:"id"`
-	Message string        `json:"msg"`
-	Error   errorResponse `json:"error"`
-	//do i need this?
-	Session string `json:"session"`
-}
-
 type wssRequest struct {
 	ID      string `json:"id"`
 	Message string `json:"msg"`
@@ -71,99 +54,12 @@ type wssRequest struct {
 	Name    string `json:"name"`
 }
 
-// add match room id method
-type rooms struct {
-	wssResponse
-	Result struct {
-		Rooms []roomSchema `json:"update"`
-	} `json:"result"`
-}
-
-func (s *subscription) handleResponse(response []byte, allRooms []roomSchema) error {
-	json.Unmarshal(response, s)
-	for _, message := range s.Fields.Messages {
-		if message.Content == "" {
-			continue
-		}
-
-		var roomName string
-		for _, room := range allRooms {
-			if room.ID == message.RoomID {
-				roomName = room.Name
-				break
-			}
-		}
-		printMessage(roomName, message.Sender.Name, message.Content, message.Timestamp.Timestamp)
-	}
-
-	if s.Error != (errorResponse{}) {
-		return errors.New("failed to fetch room data")
-	}
-
-	return nil
-}
-
-func (s *subscription) constructRequest(roomID string) string {
-	//fix this bug? rocket always responds with "id: id" regargless
-	//s.ID = utils.RandID(5)
-	s.ID = "id"
-
-	request := struct {
-		wssRequest
-		Params []string `json:"params"`
-	}{
-		wssRequest: wssRequest{
-			ID:      s.ID,
-			Message: "sub",
-			Name:    "stream-room-messages",
-		},
-		Params: []string{
-			roomID,
-			"false",
-		},
-	}
-	message, _ := json.Marshal(request)
-
-	return string(message)
-}
-
-func (r *rooms) handleResponse(response []byte) error {
-	json.Unmarshal(response, r)
-
-	if r.Error != (errorResponse{}) {
-		return errors.New("failed to fetch room data")
-	}
-
-	for i, room := range r.Result.Rooms {
-		if room.Name == "" {
-			r.Result.Rooms[i].Name = strings.Join(room.Usernames, ", ")
-		}
-	}
-
-	return nil
-}
-
-func (r *rooms) constructRequest() string {
-	r.ID = utils.RandID(5)
-
-	request := struct {
-		wssRequest
-		Params []map[string]int `json:"params"`
-	}{
-		wssRequest: wssRequest{
-			ID:      r.ID,
-			Message: "method",
-			Method:  "rooms/get",
-		},
-		Params: []map[string]int{
-			map[string]int{
-				"$date": 0,
-			},
-		},
-	}
-	message, _ := json.Marshal(request)
-
-	return string(message)
+type wssResponse struct {
+	ID      string        `json:"id"`
+	Message string        `json:"msg"`
+	Error   errorResponse `json:"error"`
+	//do i need this?
+	Session string `json:"session"`
 }
 
 func (w *wssResponse) authenticate(username string, password string) string {
@@ -214,6 +110,110 @@ func (w *wssResponse) handleResponse(response []byte) error {
 	return nil
 }
 
+// add match room id method
+type rooms struct {
+	wssResponse
+	Result struct {
+		Rooms []roomSchema `json:"update"`
+	} `json:"result"`
+}
+
+func (r *rooms) handleResponse(response []byte) error {
+	json.Unmarshal(response, r)
+
+	if r.Error != (errorResponse{}) {
+		return errors.New("failed to fetch room data")
+	}
+
+	for i, room := range r.Result.Rooms {
+		if room.Name == "" {
+			r.Result.Rooms[i].Name = makeRoomName(room.Usernames)
+		}
+	}
+
+	return nil
+}
+
+func (r *rooms) constructRequest() string {
+	r.ID = utils.RandID(5)
+
+	request := struct {
+		wssRequest
+		Params []map[string]int `json:"params"`
+	}{
+		wssRequest: wssRequest{
+			ID:      r.ID,
+			Message: "method",
+			Method:  "rooms/get",
+		},
+		Params: []map[string]int{
+			map[string]int{
+				"$date": 0,
+			},
+		},
+	}
+	message, _ := json.Marshal(request)
+
+	return string(message)
+}
+
+type subscription struct {
+	wssResponse
+	Collection string `json:"collection"`
+	Fields     struct {
+		EventName string          `json:"eventName"`
+		Messages  []messageSchema `json:"args"`
+	} `json:"fields"`
+}
+
+func (s *subscription) handleResponse(response []byte, allRooms []roomSchema) error {
+	json.Unmarshal(response, s)
+	for _, message := range s.Fields.Messages {
+		if message.Content == "" {
+			continue
+		}
+
+		var roomName string
+		for _, room := range allRooms {
+			if room.ID == message.RoomID {
+				roomName = room.Name
+				break
+			}
+		}
+		printMessage(roomName, message.Sender.Name, message.Content, message.Timestamp.Timestamp)
+	}
+
+	if s.Error != (errorResponse{}) {
+		return errors.New("failed to fetch room data")
+	}
+
+	return nil
+}
+
+func (s *subscription) constructRequest(roomID string) string {
+	//fix this bug? rocket always responds with "id: id" regargless
+	//s.ID = utils.RandID(5)
+	s.ID = "id"
+
+	request := struct {
+		wssRequest
+		Params []string `json:"params"`
+	}{
+		wssRequest: wssRequest{
+			ID:      s.ID,
+			Message: "sub",
+			Name:    "stream-room-messages",
+		},
+		Params: []string{
+			roomID,
+			"false",
+		},
+	}
+	message, _ := json.Marshal(request)
+
+	return string(message)
+}
+
 func getCredentials() (string, string, string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -236,30 +236,6 @@ func getCredentials() (string, string, string, error) {
 	}
 
 	return strings.TrimSpace(host), strings.TrimSpace(username), string(bytePassword), nil
-}
-
-func printMessage(room string, user string, content string, timestamp int) {
-
-	colourTextCodes := []string{
-		"31", "32", "33", "34", "35", "36",
-	}
-	colourBackgroundCodes := []string{"41", "42", "43", "44", "45", "46"}
-
-	resetColour := "\033[0m"
-	blackText := "\033[30m"
-
-	userColour := "\033[" + colourTextCodes[len(user)%(len(colourTextCodes)-1)] + "m"
-	roomColour := "\033[" + colourBackgroundCodes[len(room)%(len(colourBackgroundCodes)-1)] + "m"
-
-	user = userColour + user + resetColour
-	room = roomColour + blackText + " " + room + " " + resetColour
-
-	ts := time.UnixMilli(int64(timestamp))
-	timePretty := ts.Format(time.Kitchen)
-
-	timePretty = utils.PadLeft(timePretty, "0", 7)
-
-	fmt.Println("       ", timePretty, "     ", room, "      ", user, "     ", content)
 }
 
 func main() {

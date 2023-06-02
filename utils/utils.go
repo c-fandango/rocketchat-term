@@ -3,6 +3,7 @@ package utils
 
 import (
 	"math/rand"
+	"unicode/utf8"
 )
 
 func RandID(n int) string {
@@ -15,8 +16,15 @@ func RandID(n int) string {
 }
 
 func PadLeft(input string, padding string, n int) string {
-	for len(input) < n {
+	for utf8.RuneCountInString(input) < n {
 		input = padding + input
+	}
+	return input
+}
+
+func PadRight(input string, padding string, n int) string {
+	for utf8.RuneCountInString(input) < n {
+		input += padding
 	}
 	return input
 }
