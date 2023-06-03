@@ -23,14 +23,17 @@ type userSchema struct {
 	Name     string `json:"name"`
 }
 
+type timestampSchema struct {
+	TS int `json:"$date"`
+}
+
 type messageSchema struct {
-	ID        string `json:"_id"`
-	RoomID    string `json:"rid"`
-	Content   string `json:"msg"`
-	Timestamp struct {
-		Timestamp int `json:"$date"`
-	} `json:"ts"`
-	Sender userSchema `json:"u"`
+	ID       string          `json:"_id"`
+	RoomID   string          `json:"rid"`
+	Content  string          `json:"msg"`
+	SentTS   timestampSchema `json:"ts"`
+	UpdateTS timestampSchema `json:"_updatedAt"`
+	Sender   userSchema      `json:"u"`
 }
 
 type roomSchema struct {
@@ -55,11 +58,10 @@ type wssRequest struct {
 }
 
 type wssResponse struct {
-	ID      string        `json:"id"`
-	Message string        `json:"msg"`
-	Error   errorResponse `json:"error"`
-	//do i need this?
-	Session string `json:"session"`
+	ID         string        `json:"id"`
+	Message    string        `json:"msg"`
+	Error      errorResponse `json:"error"`
+	Collection string        `json:"collection"`
 }
 
 func (w *wssResponse) authenticate(username string, password string) string {
@@ -159,28 +161,34 @@ func (r *rooms) constructRequest() string {
 
 type subscription struct {
 	wssResponse
-	Collection string `json:"collection"`
-	Fields     struct {
+	Fields struct {
 		EventName string          `json:"eventName"`
 		Messages  []messageSchema `json:"args"`
 	} `json:"fields"`
 }
 
 func (s *subscription) handleResponse(response []byte, allRooms []roomSchema) error {
+	const newMessageAllowedDelayMS = 400
+
 	json.Unmarshal(response, s)
 	for _, message := range s.Fields.Messages {
-		if message.Content == "" {
+		var roomName string
+
+		if message.UpdateTS.TS > message.SentTS.TS+newMessageAllowedDelayMS {
 			continue
 		}
 
-		var roomName string
 		for _, room := range allRooms {
 			if room.ID == message.RoomID {
 				roomName = room.Name
 				break
 			}
 		}
-		printMessage(roomName, message.Sender.Name, message.Content, message.Timestamp.Timestamp)
+
+		if message.Content != "" {
+			printMessage(roomName, message.Sender.Name, message.Content, message.SentTS.TS)
+		}
+
 	}
 
 	if s.Error != (errorResponse{}) {
@@ -191,9 +199,7 @@ func (s *subscription) handleResponse(response []byte, allRooms []roomSchema) er
 }
 
 func (s *subscription) constructRequest(roomID string) string {
-	//fix this bug? rocket always responds with "id: id" regargless
-	//s.ID = utils.RandID(5)
-	s.ID = "id"
+	s.ID = utils.RandID(5)
 
 	request := struct {
 		wssRequest
@@ -267,8 +273,9 @@ func main() {
 	defer c.Close()
 
 	var auth wssResponse
-	var roomSub subscription
 	var allRooms rooms
+	var roomSub subscription
+	roomSub.Collection = "stream-room-messages"
 
 	done := make(chan struct{})
 
@@ -310,7 +317,7 @@ func main() {
 
 				messageOut <- roomSub.constructRequest("__my_messages__")
 
-			} else if data.ID == roomSub.ID && data.Message == "changed" {
+			} else if data.Collection == roomSub.Collection && data.Message == "changed" {
 				err := roomSub.handleResponse(response, allRooms.Result.Rooms)
 				if err != nil {
 					fmt.Println(err)
