@@ -44,10 +44,10 @@ func makeRoomName(input []string) string {
 	}
 
 	return strings.Join(initials, ", ")
-
 }
 
-func fmtContent(content string, indent int) string {
+func fmtContent(content string, indent int, codeColour string) string {
+	resetColour := "\033[0m"
 
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {
@@ -55,7 +55,7 @@ func fmtContent(content string, indent int) string {
 			line = strings.Repeat(" ", indent) + line
 		}
 
-		lines[i] = strings.ReplaceAll(line, "```", "")
+		lines[i] = strings.ReplaceAll(line, "`", resetColour+codeColour)
 	}
 
 	return strings.Join(lines, "\n")
@@ -70,15 +70,42 @@ func printMessage(room string, user string, content string, timestamp int) {
 	const indentWidth = 7
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
-	colourCodes256 := []string{
-		"2", "5", "6", "20", "40", "87", "93", "130", "158", "171", "214", "220",
+	fgColourCodes256 := []string{
+		"\033[38;5;2m",   // green
+		"\033[38;5;5m",   // purple
+		"\033[38;5;6m",   // teal
+		"\033[38;5;20m",  // blue3
+		"\033[38;5;40m",  // green3
+		"\033[38;5;87m",  // darkSlateGray2
+		"\033[38;5;130m", // darkOrange3
+		"\033[38;5;148m", // yellow3
+		"\033[38;5;158m", // darkSeaGreen1
+		"\033[38;5;171m", // mediumOrchid1
+		"\033[38;5;214m", // orange1
+		"\033[38;5;220m", // gold1
+	}
+
+	bgColourCodes256 := []string{
+		"\033[48;5;2m",   // green
+		"\033[48;5;5m",   // purple
+		"\033[48;5;6m",   // teal
+		"\033[48;5;20m",  // blue3
+		"\033[48;5;40m",  // green3
+		"\033[48;5;87m",  // darkSlateGray2
+		"\033[48;5;130m", // darkOrange3
+		"\033[48;5;148m", // yellow3
+		"\033[48;5;158m", // darkSeaGreen1
+		"\033[48;5;171m", // mediumOrchid1
+		"\033[48;5;214m", // orange1
+		"\033[48;5;220m", // gold1
 	}
 
 	resetColour := "\033[0m"
 	blackText := "\033[38;5;0m"
+	codeColour := "\033[38;5;186m"
 
-	userColour := "\033[38;5;" + colourCodes256[len(user)%(len(colourCodes256)-1)] + "m"
-	roomColour := "\033[48;5;" + colourCodes256[len(room)%(len(colourCodes256)-1)] + "m" + blackText
+	userColour := fgColourCodes256[len(user)%(len(fgColourCodes256)-1)]
+	roomColour := bgColourCodes256[len(room)%(len(bgColourCodes256)-1)] + blackText
 
 	user = makeShortName(user)
 
@@ -92,7 +119,7 @@ func printMessage(room string, user string, content string, timestamp int) {
 	roomFmtWidth := roomWidth + len(roomFmt) - len(room)
 	userFmtWidth := userWidth + len(userFmt) - len(user)
 
-	newLine := strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(content, contentIndent)
+	newLine := resetColour + strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(content, contentIndent, codeColour)
 
 	fmt.Println(newLine)
 }
