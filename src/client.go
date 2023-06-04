@@ -7,7 +7,6 @@ import (
 	"github.com/c-fandango/rocketchat-term/creds"
 	"github.com/c-fandango/rocketchat-term/utils"
 	"github.com/gorilla/websocket"
-	"log"
 	"net/url"
 	"os"
 	"os/signal"
@@ -270,13 +269,6 @@ func (s *subscription) constructRequest(roomID string) string {
 
 func main() {
 	fmt.Println("hello world")
-	f, err := os.OpenFile("./rocketchat.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-	defer f.Close()
-
-	log.SetOutput(f)
 
 	var auth authResponse
 
@@ -287,8 +279,6 @@ func main() {
 	auth.host = credentials["host"]
 
 	u := url.URL{Scheme: "wss", Host: credentials["host"], Path: "/websocket"}
-	log.Printf("connecting to %s", u.String())
-
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 
 	if err != nil {
@@ -317,14 +307,11 @@ func main() {
 			_, response, err := c.ReadMessage()
 
 			if err != nil {
-				log.Println("read:", err)
+				fmt.Println("error in reading incoming message ", err)
 				return
 			}
 
-			log.Printf("recv: %s", response)
-
 			var data wssResponse
-
 			json.Unmarshal(response, &data)
 
 			if data.Message == "connected" {
@@ -337,7 +324,7 @@ func main() {
 				err := auth.handleResponse(response)
 				if err != nil {
 					fmt.Println(err)
-					break
+					return
 				}
 				fmt.Println("authenticated")
 
@@ -347,7 +334,7 @@ func main() {
 				err := allRooms.handleResponse(response)
 				if err != nil {
 					fmt.Println(err)
-					break
+					return
 				}
 
 				messageOut <- roomSub.constructRequest("__my_messages__")
@@ -356,7 +343,7 @@ func main() {
 				err := roomSub.handleResponse(response, allRooms.Result.Rooms)
 				if err != nil {
 					fmt.Println(err)
-					break
+					return
 				}
 
 			} else if data.Message == "ping" {
@@ -372,19 +359,17 @@ eventLoop:
 			break eventLoop
 		case m := <-messageOut:
 
-			log.Printf("Send Message %s", m)
 			err := c.WriteMessage(websocket.TextMessage, []byte(m))
 
 			if err != nil {
-				log.Println("write:", err)
+				fmt.Println("error sending websocket message ", err)
 			}
 		case <-interrupt:
 
-			log.Println("interrupt")
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 
 			if err != nil {
-				log.Println("write close:", err)
+				fmt.Println("error closing websocket", err)
 			}
 			select {
 			case <-done:
