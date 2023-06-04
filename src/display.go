@@ -59,7 +59,6 @@ func fmtContent(content string, indent int, codeColour string) string {
 	}
 
 	return strings.Join(lines, "\n")
-
 }
 
 func printMessage(room string, user string, content string, timestamp int) {

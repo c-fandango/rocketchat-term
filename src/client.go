@@ -1,26 +1,32 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/c-fandango/rocketchat-term/creds"
 	"github.com/c-fandango/rocketchat-term/utils"
 	"github.com/gorilla/websocket"
-	"golang.org/x/term"
 	"log"
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
-	"syscall"
 	"time"
 )
+
+var homeDir, _ = os.UserHomeDir()
+var cachePath = homeDir + "/.rocketchat-term"
 
 type userSchema struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
 	Name     string `json:"name"`
+}
+
+type cacheSchema struct {
+	Host      string `json:"host"`
+	Token     string `json:"token"`
+	ExpiresAt int    `json:"expiresAt"`
 }
 
 type timestampSchema struct {
@@ -64,7 +70,17 @@ type wssResponse struct {
 	Collection string        `json:"collection"`
 }
 
-func (w *wssResponse) authenticate(username string, password string) string {
+type authResponse struct {
+	wssResponse
+	Result struct {
+		Token   string          `json:"token"`
+		Type    string          `json:"type"`
+		Expires timestampSchema `json:"tokenExpires"`
+	} `json:"result"`
+	host string
+}
+
+func (a *authResponse) authenticateLdap(username string, password string) string {
 
 	type ldapParams struct {
 		Ldap        bool              `json:"ldap"`
@@ -73,14 +89,14 @@ func (w *wssResponse) authenticate(username string, password string) string {
 		LdapOptions map[string]string `json:"ldapOptions"`
 	}
 
-	w.ID = utils.RandID(5)
+	a.ID = utils.RandID(5)
 
 	request := struct {
 		wssRequest
 		Params []ldapParams `json:"params"`
 	}{
 		wssRequest: wssRequest{
-			ID:      w.ID,
+			ID:      a.ID,
 			Message: "method",
 			Method:  "login",
 		},
@@ -96,23 +112,55 @@ func (w *wssResponse) authenticate(username string, password string) string {
 	message, _ := json.Marshal(request)
 
 	return string(message)
-
 }
 
-// TODO cache the token
-func (w *wssResponse) handleResponse(response []byte) error {
-	json.Unmarshal(response, w)
+func (a *authResponse) authenticateToken(token string) string {
 
-	if w.Error != (errorResponse{}) {
+	a.ID = utils.RandID(5)
+
+	request := struct {
+		wssRequest
+		Params []map[string]string `json:"params"`
+	}{
+		wssRequest: wssRequest{
+			ID:      a.ID,
+			Message: "method",
+			Method:  "login",
+		},
+		Params: []map[string]string{
+			map[string]string{"resume": token},
+		}}
+
+	message, _ := json.Marshal(request)
+
+	return string(message)
+}
+
+func (a *authResponse) handleResponse(response []byte) error {
+	json.Unmarshal(response, a)
+
+	if a.Error != (errorResponse{}) {
+		creds.ClearCache(cachePath)
 		return errors.New("authorisation failed")
 	}
 
-	fmt.Println("authenticated")
+	tokenCache := cacheSchema{
+		Host:      a.host,
+		Token:     a.Result.Token,
+		ExpiresAt: a.Result.Expires.TS,
+	}
+
+	cache, _ := json.Marshal(tokenCache)
+
+	err := creds.WriteCache(cachePath, cache)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-// add match room id method
 type rooms struct {
 	wssResponse
 	Result struct {
@@ -220,30 +268,6 @@ func (s *subscription) constructRequest(roomID string) string {
 	return string(message)
 }
 
-func getCredentials() (string, string, string, error) {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter Host Domain: ")
-	host, err := reader.ReadString('\n')
-	if err != nil {
-		return "", "", "", err
-	}
-
-	fmt.Print("Enter Username: ")
-	username, err := reader.ReadString('\n')
-	if err != nil {
-		return "", "", "", err
-	}
-
-	fmt.Print("Enter Password: ")
-	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return "", "", "", err
-	}
-
-	return strings.TrimSpace(host), strings.TrimSpace(username), string(bytePassword), nil
-}
-
 func main() {
 	fmt.Println("hello world")
 	f, err := os.OpenFile("./rocketchat.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -254,42 +278,49 @@ func main() {
 
 	log.SetOutput(f)
 
-	messageOut := make(chan string)
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
+	var auth authResponse
 
-	host, username, password, _ := getCredentials()
+	credentials, err := getCredentials(cachePath)
+	if err != nil {
+		fmt.Println(err)
+	}
+	auth.host = credentials["host"]
 
-	u := url.URL{Scheme: "wss", Host: host, Path: "/websocket"}
+	u := url.URL{Scheme: "wss", Host: credentials["host"], Path: "/websocket"}
 	log.Printf("connecting to %s", u.String())
 
-	c, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 
 	if err != nil {
-		log.Printf("handshake failed with status %d", resp.StatusCode)
-		log.Fatal("dial:", err)
+		panic("invalid host")
 	}
 
 	defer c.Close()
 
-	var auth wssResponse
 	var allRooms rooms
 	var roomSub subscription
 	roomSub.Collection = "stream-room-messages"
+	connectMessage := `{"msg": "connect","version": "1","support": ["1"]}`
+	pongMessage := `{"msg": "pong"}`
 
 	done := make(chan struct{})
+	messageOut := make(chan string)
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
 
 	go func() {
 		defer close(done)
-		connectMessage := `{"msg": "connect","version": "1","support": ["1"]}`
 		messageOut <- connectMessage
 
+		// TODO don't busy loop
 		for {
 			_, response, err := c.ReadMessage()
+
 			if err != nil {
 				log.Println("read:", err)
 				return
 			}
+
 			log.Printf("recv: %s", response)
 
 			var data wssResponse
@@ -297,14 +328,18 @@ func main() {
 			json.Unmarshal(response, &data)
 
 			if data.Message == "connected" {
-				messageOut <- auth.authenticate(username, password)
-
+				if credentials["token"] != "" {
+					messageOut <- auth.authenticateToken(credentials["token"])
+				} else {
+					messageOut <- auth.authenticateLdap(credentials["username"], credentials["password"])
+				}
 			} else if data.ID == auth.ID && data.Message == "result" {
 				err := auth.handleResponse(response)
 				if err != nil {
 					fmt.Println(err)
 					break
 				}
+				fmt.Println("authenticated")
 
 				messageOut <- allRooms.constructRequest()
 
@@ -325,7 +360,7 @@ func main() {
 				}
 
 			} else if data.Message == "ping" {
-				messageOut <- `{"msg": "pong"}`
+				messageOut <- pongMessage
 			}
 		}
 	}()
