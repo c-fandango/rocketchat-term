@@ -352,11 +352,10 @@ func main() {
 		}
 	}()
 
-eventLoop:
 	for {
 		select {
 		case <-done:
-			break eventLoop
+			return
 		case m := <-messageOut:
 
 			err := c.WriteMessage(websocket.TextMessage, []byte(m))
@@ -375,7 +374,7 @@ eventLoop:
 			case <-done:
 			case <-time.After(time.Second):
 			}
-			break eventLoop
+			return
 		}
 	}
 }
