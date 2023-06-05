@@ -49,13 +49,12 @@ func makeRoomName(input []string) string {
 func fmtContent(content string, indent int, codeColour string) string {
 	resetColour := "\033[0m"
 
-	lines := strings.Split(content, "\n")
-	for i, line := range lines {
-		if i != 0 {
-			line = strings.Repeat(" ", indent) + line
-		}
+        content = utils.ReplaceEveryOther(content, "`", resetColour+codeColour)
+        content = strings.ReplaceAll(content, "`", resetColour)
 
-		lines[i] = strings.ReplaceAll(line, "`", resetColour+codeColour)
+	lines := strings.Split(content, "\n")
+	for i:=1; i<len(lines); i++ {
+			lines[i] = strings.Repeat(" ", indent) + lines[i]
 	}
 
 	return strings.Join(lines, "\n")
@@ -73,12 +72,12 @@ func printMessage(room string, user string, content string, timestamp int) {
 		"\033[38;5;2m",   // green
 		"\033[38;5;5m",   // purple
 		"\033[38;5;6m",   // teal
-		"\033[38;5;20m",  // blue3
 		"\033[38;5;40m",  // green3
 		"\033[38;5;87m",  // darkSlateGray2
 		"\033[38;5;130m", // darkOrange3
 		"\033[38;5;148m", // yellow3
 		"\033[38;5;158m", // darkSeaGreen1
+		"\033[38;5;169m", // hotPink2
 		"\033[38;5;171m", // mediumOrchid1
 		"\033[38;5;214m", // orange1
 		"\033[38;5;220m", // gold1
@@ -88,12 +87,12 @@ func printMessage(room string, user string, content string, timestamp int) {
 		"\033[48;5;2m",   // green
 		"\033[48;5;5m",   // purple
 		"\033[48;5;6m",   // teal
-		"\033[48;5;20m",  // blue3
 		"\033[48;5;40m",  // green3
 		"\033[48;5;87m",  // darkSlateGray2
 		"\033[48;5;130m", // darkOrange3
 		"\033[48;5;148m", // yellow3
 		"\033[48;5;158m", // darkSeaGreen1
+		"\033[38;5;169m", // hotPink2
 		"\033[48;5;171m", // mediumOrchid1
 		"\033[48;5;214m", // orange1
 		"\033[48;5;220m", // gold1
