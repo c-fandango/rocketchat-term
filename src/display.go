@@ -66,6 +66,7 @@ func printMessage(room string, user string, content string, timestamp int) {
 	const roomWidth = 24
 	const userWidth = 14
 	const indentWidth = 7
+        const newLineMarkerWidth = 13
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
 	fgColourCodes256 := []string{
@@ -118,6 +119,8 @@ func printMessage(room string, user string, content string, timestamp int) {
 	userFmtWidth := userWidth + len(userFmt) - len(user)
 
 	newLine := resetColour + strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(content, contentIndent, codeColour)
+
+        newLine = strings.Repeat("-", newLineMarkerWidth) + "\n" + newLine
 
 	fmt.Println(newLine)
 }
