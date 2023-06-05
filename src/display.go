@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/c-fandango/rocketchat-term/utils"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -46,18 +47,14 @@ func makeRoomName(input []string) string {
 	return strings.Join(initials, ", ")
 }
 
-func fmtContent(content string, indent int, codeColour string) string {
-	resetColour := "\033[0m"
+func fmtContent(content string, replacePatterns map[string]string) string {
 
-        content = utils.ReplaceEveryOther(content, "`", resetColour+codeColour)
-        content = strings.ReplaceAll(content, "`", resetColour)
-
-	lines := strings.Split(content, "\n")
-	for i:=1; i<len(lines); i++ {
-			lines[i] = strings.Repeat(" ", indent) + lines[i]
+	for pattern, replace := range replacePatterns {
+		reg := regexp.MustCompile(pattern)
+		content = reg.ReplaceAllString(content, replace)
 	}
 
-	return strings.Join(lines, "\n")
+	return content
 }
 
 func printMessage(room string, user string, content string, timestamp int) {
@@ -66,7 +63,7 @@ func printMessage(room string, user string, content string, timestamp int) {
 	const roomWidth = 24
 	const userWidth = 14
 	const indentWidth = 7
-        const newLineMarkerWidth = 13
+	const newLineMarkerWidth = 13
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
 	fgColourCodes256 := []string{
@@ -101,7 +98,18 @@ func printMessage(room string, user string, content string, timestamp int) {
 
 	resetColour := "\033[0m"
 	blackText := "\033[38;5;0m"
-	codeColour := "\033[38;5;186m"
+	codeColour := "\033[38;5;186m"   // lightGoldenrod2
+	notifyColour := "\033[48;5;160m" // red3
+	ticketColour := "\033[38;5;39m"  // deepSkyBlue1
+
+	replacePatterns := map[string]string{
+		`(@\w+)`:            notifyColour + " ${1} " + resetColour,
+		`(#\d{6})`:          ticketColour + "${1}" + resetColour,
+		"```((.|\\n)+?)```": codeColour + "${1}" + resetColour,
+		"`((.|\\n)+?)`":     codeColour + "${1}" + resetColour,
+		`(\n)`:              "\n" + strings.Repeat(" ", contentIndent),
+		`(\z)`:              resetColour,
+	}
 
 	userColour := fgColourCodes256[len(user)%(len(fgColourCodes256)-1)]
 	roomColour := bgColourCodes256[len(room)%(len(bgColourCodes256)-1)] + blackText
@@ -118,9 +126,9 @@ func printMessage(room string, user string, content string, timestamp int) {
 	roomFmtWidth := roomWidth + len(roomFmt) - len(room)
 	userFmtWidth := userWidth + len(userFmt) - len(user)
 
-	newLine := resetColour + strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(content, contentIndent, codeColour)
+	newLine := strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(content, replacePatterns)
 
-        newLine = strings.Repeat("-", newLineMarkerWidth) + "\n" + newLine
+	newLine = strings.Repeat("-", newLineMarkerWidth) + "\n" + newLine
 
 	fmt.Println(newLine)
 }
