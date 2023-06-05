@@ -4,6 +4,7 @@ package utils
 import (
 	"math/rand"
 	"unicode/utf8"
+        "strings"
 )
 
 func RandID(n int) string {
@@ -35,3 +36,12 @@ func MergeStringMaps(first map[string]string, second map[string]string) map[stri
 	}
 	return first
 }
+
+func ReplaceEveryOther(input string, target string, replace string) string {
+    inputSplt := strings.Split(input, target)
+    for i:=1; i<len(inputSplt) - 1; i+=2 {
+        inputSplt[i] = replace + inputSplt[i] + target 
+    }
+    return strings.Join(inputSplt, "")
+}
+
