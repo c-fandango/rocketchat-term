@@ -304,12 +304,11 @@ func main() {
 
 		// TODO don't busy loop
 		for {
-			_, response, err := c.ReadMessage()
+			_, response, _:= c.ReadMessage()
 
-			if err != nil {
-				fmt.Println("error in reading incoming message ", err)
-				return
-			}
+			//if err != nil {
+			//	fmt.Println("error in reading incoming message ", err)
+			//}
 
 			var data wssResponse
 			json.Unmarshal(response, &data)
