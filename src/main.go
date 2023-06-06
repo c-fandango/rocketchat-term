@@ -7,12 +7,15 @@ import (
 	"github.com/c-fandango/rocketchat-term/creds"
 	"github.com/c-fandango/rocketchat-term/utils"
 	"github.com/gorilla/websocket"
+	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"os/signal"
 	"time"
 )
 
+var debugMode = true
 var homeDir, _ = os.UserHomeDir()
 var cachePath = homeDir + "/.rocketchat-term"
 
@@ -45,6 +48,7 @@ type roomSchema struct {
 	ID        string   `json:"_id"`
 	ReadOnly  bool     `json:"ro"`
 	Name      string   `json:"name"`
+	Topic     string   `json:"topic"`
 	Usernames []string `json:"usernames"`
 	Messages  []messageSchema
 }
@@ -165,6 +169,7 @@ type rooms struct {
 	Result struct {
 		Rooms []roomSchema `json:"update"`
 	} `json:"result"`
+	rooms []roomSchema
 }
 
 func (r *rooms) handleResponse(response []byte) error {
@@ -174,10 +179,13 @@ func (r *rooms) handleResponse(response []byte) error {
 		return errors.New("failed to fetch room data")
 	}
 
-	for i, room := range r.Result.Rooms {
-		if room.Name == "" {
-			r.Result.Rooms[i].Name = makeRoomName(room.Usernames)
+	for _, room := range r.Result.Rooms {
+		if room.Topic != "" {
+			room.Name = room.Topic
+		} else if room.Name == "" {
+			room.Name = makeRoomName(room.Usernames)
 		}
+		r.rooms = append(r.rooms, room)
 	}
 
 	return nil
@@ -206,6 +214,19 @@ func (r *rooms) constructRequest() string {
 	return string(message)
 }
 
+func (r *rooms) addMessage(message messageSchema) (roomSchema, error) {
+	if message.RoomID == "" {
+		return roomSchema{}, errors.New("message has no room id")
+	}
+	for i, room := range r.rooms {
+		if room.ID == message.RoomID {
+			r.rooms[i].Messages = append(r.rooms[i].Messages, message)
+			return room, nil
+		}
+	}
+	return roomSchema{}, errors.New("failed to match room")
+}
+
 type subscription struct {
 	wssResponse
 	Fields struct {
@@ -214,28 +235,25 @@ type subscription struct {
 	} `json:"fields"`
 }
 
-func (s *subscription) handleResponse(response []byte, allRooms []roomSchema) error {
+func (s *subscription) handleResponse(response []byte, allRooms *rooms) error {
 	const newMessageAllowedDelayMS = 400
 
 	json.Unmarshal(response, s)
 	for _, message := range s.Fields.Messages {
-		var roomName string
 
 		if message.UpdateTS.TS > message.SentTS.TS+newMessageAllowedDelayMS {
 			continue
 		}
 
-		for _, room := range allRooms {
-			if room.ID == message.RoomID {
-				roomName = room.Name
-				break
-			}
+		matchedRoom, err := allRooms.addMessage(message)
+
+		if err != nil {
+			log.Println(err)
 		}
 
 		if message.Content != "" {
-			printMessage(roomName, message.Sender.Name, message.Content, message.SentTS.TS)
+			printMessage(matchedRoom.Name, message.Sender.Name, message.Content, message.SentTS.TS)
 		}
-
 	}
 
 	if s.Error != (errorResponse{}) {
@@ -269,6 +287,12 @@ func (s *subscription) constructRequest(roomID string) string {
 
 func main() {
 	fmt.Println("hello world")
+
+	if debugMode {
+		log.SetOutput(os.Stdout)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	var auth authResponse
 
@@ -304,12 +328,13 @@ func main() {
 
 		// TODO don't busy loop
 		for {
-			_, response, _:= c.ReadMessage()
+			_, response, err := c.ReadMessage()
 
-			//if err != nil {
-			//	fmt.Println("error in reading incoming message ", err)
-			//}
+			if err != nil {
+				log.Println("error in reading incoming message ", err)
+			}
 
+			log.Println(string(response))
 			var data wssResponse
 			json.Unmarshal(response, &data)
 
@@ -339,7 +364,7 @@ func main() {
 				messageOut <- roomSub.constructRequest("__my_messages__")
 
 			} else if data.Collection == roomSub.Collection && data.Message == "changed" {
-				err := roomSub.handleResponse(response, allRooms.Result.Rooms)
+				err := roomSub.handleResponse(response, &allRooms)
 				if err != nil {
 					fmt.Println(err)
 					return
