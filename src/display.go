@@ -63,7 +63,7 @@ func printMessage(room string, user string, content string, timestamp int) {
 	const roomWidth = 24
 	const userWidth = 14
 	const indentWidth = 7
-	const newLineMarkerWidth = 13
+	const newLineMarkerWidth = 14
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
 	fgColourCodes256 := []string{
@@ -103,8 +103,8 @@ func printMessage(room string, user string, content string, timestamp int) {
 	ticketColour := "\033[38;5;39m"  // deepSkyBlue1
 
 	replacePatterns := map[string]string{
-		`(@\w+)`:            notifyColour + " ${1} " + resetColour,
-		`(#\d{6})`:          ticketColour + "${1}" + resetColour,
+		`( |^)(@[^\s]+)`:    "${1}" + notifyColour + " ${2} " + resetColour,
+		`( |^)(#\d{6})`:     "${1}" + ticketColour + "${2}" + resetColour,
 		"```((.|\\n)+?)```": codeColour + "${1}" + resetColour,
 		"`((.|\\n)+?)`":     codeColour + "${1}" + resetColour,
 		`(\n)`:              "\n" + strings.Repeat(" ", contentIndent),
