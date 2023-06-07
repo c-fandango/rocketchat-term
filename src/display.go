@@ -33,7 +33,7 @@ func makeShortName(name string) string {
 	return shortName
 }
 
-func makeRoomName(input []string) string {
+func initialiseNames(input []string) string {
 	if len(input) == 1 {
 		return input[0]
 	}

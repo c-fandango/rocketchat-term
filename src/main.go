@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/c-fandango/rocketchat-term/creds"
+	"github.com/c-fandango/rocketchat-term/requests"
 	"github.com/c-fandango/rocketchat-term/utils"
 	"github.com/gorilla/websocket"
 	"io/ioutil"
@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-var debugMode = true
+var debugMode = false
 var homeDir, _ = os.UserHomeDir()
 var cachePath = homeDir + "/.rocketchat-term"
 
@@ -27,6 +27,7 @@ type userSchema struct {
 
 type cacheSchema struct {
 	Host      string `json:"host"`
+	User      string `json:"user"`
 	Token     string `json:"token"`
 	ExpiresAt int    `json:"expiresAt"`
 }
@@ -48,9 +49,20 @@ type roomSchema struct {
 	ID        string   `json:"_id"`
 	ReadOnly  bool     `json:"ro"`
 	Name      string   `json:"name"`
+	Fname     string   `json:"fname"`
 	Topic     string   `json:"topic"`
 	Usernames []string `json:"usernames"`
 	Messages  []messageSchema
+}
+
+func (r *roomSchema) makeName() {
+	if r.Topic != "" {
+		r.Name = r.Topic
+	} else if r.Fname != "" {
+		r.Name = r.Fname
+	} else if r.Name == "" {
+		r.Name = initialiseNames(r.Usernames)
+	}
 }
 
 type errorResponse struct {
@@ -76,6 +88,7 @@ type wssResponse struct {
 type authResponse struct {
 	wssResponse
 	Result struct {
+		User    string          `json:"id"`
 		Token   string          `json:"token"`
 		Type    string          `json:"type"`
 		Expires timestampSchema `json:"tokenExpires"`
@@ -144,11 +157,12 @@ func (a *authResponse) handleResponse(response []byte) error {
 
 	if a.Error != (errorResponse{}) {
 		creds.ClearCache(cachePath)
-		return errors.New("authorisation failed")
+		return fmt.Errorf("authorisation failed")
 	}
 
 	tokenCache := cacheSchema{
 		Host:      a.host,
+		User:      a.Result.User,
 		Token:     a.Result.Token,
 		ExpiresAt: a.Result.Expires.TS,
 	}
@@ -176,15 +190,11 @@ func (r *rooms) handleResponse(response []byte) error {
 	json.Unmarshal(response, r)
 
 	if r.Error != (errorResponse{}) {
-		return errors.New("failed to fetch room data")
+		return fmt.Errorf("failed to fetch room data")
 	}
 
 	for _, room := range r.Result.Rooms {
-		if room.Topic != "" {
-			room.Name = room.Topic
-		} else if room.Name == "" {
-			room.Name = makeRoomName(room.Usernames)
-		}
+		room.makeName()
 		r.rooms = append(r.rooms, room)
 	}
 
@@ -216,7 +226,7 @@ func (r *rooms) constructRequest() string {
 
 func (r *rooms) addMessage(message messageSchema) (roomSchema, error) {
 	if message.RoomID == "" {
-		return roomSchema{}, errors.New("message has no room id")
+		return roomSchema{}, fmt.Errorf("message has no room id")
 	}
 	for i, room := range r.rooms {
 		if room.ID == message.RoomID {
@@ -224,7 +234,36 @@ func (r *rooms) addMessage(message messageSchema) (roomSchema, error) {
 			return room, nil
 		}
 	}
-	return roomSchema{}, errors.New("failed to match room")
+	return roomSchema{}, fmt.Errorf("failed to match room")
+}
+
+func (r *rooms) fetchNewRoom(roomId string) (roomSchema, error) {
+
+	params := []map[string]string{
+		map[string]string{
+			"roomId": roomId,
+		},
+	}
+
+	response, err := requests.GetRequest(`/api/v1/rooms.info`, params)
+
+	log.Println(string(response))
+
+	if err != nil {
+		return roomSchema{}, err
+	}
+
+	type roomResult struct {
+		Room roomSchema `json:"room"`
+	}
+
+	var room roomResult
+	json.Unmarshal(response, &room)
+
+	room.Room.makeName()
+	r.rooms = append(r.rooms, room.Room)
+
+	return room.Room, nil
 }
 
 type subscription struct {
@@ -247,8 +286,13 @@ func (s *subscription) handleResponse(response []byte, allRooms *rooms) error {
 
 		matchedRoom, err := allRooms.addMessage(message)
 
-		if err != nil {
+		if err != nil && err.Error() == "failed to match room" {
 			log.Println(err)
+			matchedRoom, err = allRooms.fetchNewRoom(message.RoomID)
+
+			if err != nil {
+				log.Println(err)
+			}
 		}
 
 		if message.Content != "" {
@@ -257,7 +301,7 @@ func (s *subscription) handleResponse(response []byte, allRooms *rooms) error {
 	}
 
 	if s.Error != (errorResponse{}) {
-		return errors.New("failed to fetch room data")
+		return fmt.Errorf("failed to fetch room data")
 	}
 
 	return nil
@@ -350,7 +394,11 @@ func main() {
 					fmt.Println(err)
 					return
 				}
+
 				fmt.Println("authenticated")
+				requests.Host = auth.host
+				requests.Token = auth.Result.Token
+				requests.User = auth.Result.User
 
 				messageOut <- allRooms.constructRequest()
 
@@ -381,6 +429,8 @@ func main() {
 		case <-done:
 			return
 		case m := <-messageOut:
+
+			log.Printf("sending message %s", m)
 
 			err := c.WriteMessage(websocket.TextMessage, []byte(m))
 
