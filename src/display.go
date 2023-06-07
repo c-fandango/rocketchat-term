@@ -60,10 +60,11 @@ func fmtContent(content string, replacePatterns map[string]string) string {
 func printMessage(room string, user string, content string, timestamp int) {
 
 	const timeWidth = 15
-	const roomWidth = 24
+	const roomWidth = 23
 	const userWidth = 14
 	const indentWidth = 7
 	const newLineMarkerWidth = 14
+	const roomNameMaxWidth = 24
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
 	fgColourCodes256 := []string{
@@ -90,7 +91,7 @@ func printMessage(room string, user string, content string, timestamp int) {
 		"\033[48;5;130m", // darkOrange3
 		"\033[48;5;148m", // yellow3
 		"\033[48;5;158m", // darkSeaGreen1
-		"\033[38;5;169m", // hotPink2
+		"\033[48;5;169m", // hotPink2
 		"\033[48;5;171m", // mediumOrchid1
 		"\033[48;5;214m", // orange1
 		"\033[48;5;220m", // gold1
@@ -120,6 +121,8 @@ func printMessage(room string, user string, content string, timestamp int) {
 	timePretty := ts.Format(time.Kitchen)
 	timePretty = utils.PadRight(timePretty, " ", timeWidth)
 
+	roomNameMaxIndex := utils.MinInt(roomNameMaxWidth-1, len(room)-1)
+	room = room[:roomNameMaxIndex]
 	roomFmt := roomColour + " " + room + " " + resetColour
 	userFmt := userColour + user + resetColour
 
