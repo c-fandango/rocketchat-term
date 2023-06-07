@@ -30,6 +30,20 @@ func PadRight(input string, padding string, n int) string {
 	return input
 }
 
+func MaxInt(first int, second int) int {
+	if first > second {
+		return first
+	}
+	return second
+}
+
+func MinInt(first int, second int) int {
+	if first < second {
+		return first
+	}
+	return second
+}
+
 func MergeStringMaps(first map[string]string, second map[string]string) map[string]string {
 	for key, value := range second {
 		first[key] = value
