@@ -179,49 +179,28 @@ func (a *authResponse) handleResponse(response []byte) error {
 }
 
 type rooms struct {
-	wssResponse
-	Result struct {
-		Rooms []roomSchema `json:"update"`
-	} `json:"result"`
-	rooms []roomSchema
+	rooms []roomSchema `json:"update"`
 }
 
-func (r *rooms) handleResponse(response []byte) error {
-	json.Unmarshal(response, r)
+func (r *rooms) fetchRooms() error {
 
-	if r.Error != (errorResponse{}) {
-		return fmt.Errorf("failed to fetch room data")
+	params := make([]map[string]string, 0)
+
+	response, err := requests.GetRequest(`/api/v1/rooms.get`, params)
+
+	log.Println(string(response))
+
+	if err != nil {
+		return err
 	}
 
-	for _, room := range r.Result.Rooms {
-		room.makeName()
-		r.rooms = append(r.rooms, room)
+	json.Unmarshal(response, r)
+
+	for i, _ := range r.rooms {
+		r.rooms[i].makeName()
 	}
 
 	return nil
-}
-
-func (r *rooms) constructRequest() string {
-	r.ID = utils.RandID(5)
-
-	request := struct {
-		wssRequest
-		Params []map[string]int `json:"params"`
-	}{
-		wssRequest: wssRequest{
-			ID:      r.ID,
-			Message: "method",
-			Method:  "rooms/get",
-		},
-		Params: []map[string]int{
-			map[string]int{
-				"$date": 0,
-			},
-		},
-	}
-	message, _ := json.Marshal(request)
-
-	return string(message)
 }
 
 func (r *rooms) addMessage(message messageSchema) (roomSchema, error) {
@@ -400,10 +379,8 @@ func main() {
 				requests.Token = auth.Result.Token
 				requests.User = auth.Result.User
 
-				messageOut <- allRooms.constructRequest()
+				allRooms.fetchRooms()
 
-			} else if data.ID == allRooms.ID && data.Message == "result" {
-				err := allRooms.handleResponse(response)
 				if err != nil {
 					fmt.Println(err)
 					return
