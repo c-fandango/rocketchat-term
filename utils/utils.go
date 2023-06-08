@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 )
 
-func RandID(n int) string {
+func RandStr(n int) string {
 	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	b := make([]byte, n)
 	for i := range b {
