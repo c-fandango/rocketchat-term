@@ -10,29 +10,27 @@ import (
 	"syscall"
 )
 
-func GetCredentials(keys map[string]string, secrets map[string]string) error {
+func GetUserInput(prompt string, secret bool) string {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	for key := range keys {
-		fmt.Printf("Enter %s: ", key)
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			return err
-		}
-		keys[key] = strings.TrimSpace(input)
-	}
+	fmt.Printf(prompt)
 
-	for key := range secrets {
-		fmt.Printf("Enter %s: ", key)
+	if secret {
 		inputSecret, err := term.ReadPassword(syscall.Stdin)
 		if err != nil {
-			return err
+			panic("error in reading input")
 		}
-		secrets[key] = strings.TrimSpace(string(inputSecret))
+		return strings.TrimSpace(string(inputSecret))
 	}
 
-	return nil
+	userInput, err := reader.ReadString('\n')
+
+	if err != nil {
+		panic("error in reading input")
+	}
+
+	return strings.TrimSpace(userInput)
 }
 
 func WriteCache(path string, cache []byte) error {

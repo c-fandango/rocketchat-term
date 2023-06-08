@@ -3,30 +3,21 @@ package main
 import (
 	"encoding/json"
 	"github.com/c-fandango/rocketchat-term/creds"
-	"github.com/c-fandango/rocketchat-term/utils"
 )
 
-func getCredentials(cachePath string) (outputCreds map[string]string, err error) {
+func getCredentials(cachePath string) (map[string]string, error) {
 
 	fileBytes, err := creds.ReadCache(cachePath)
 
+	outputCreds := make(map[string]string)
+
 	if err != nil {
-		nonSecrets := map[string]string{
-			"host":     "",
-			"username": "",
-		}
 
-		secrets := map[string]string{
-			"password": "",
-		}
+		outputCreds["host"] = creds.GetUserInput("Enter host: ", false)
+		outputCreds["username"] = creds.GetUserInput("Enter username: ", false)
+		outputCreds["password"] = creds.GetUserInput("Enter password: ", true)
 
-		err = creds.GetCredentials(nonSecrets, secrets)
-
-		if err != nil {
-			return outputCreds, err
-		}
-
-		return utils.MergeStringMaps(nonSecrets, secrets), nil
+		return outputCreds, nil
 	}
 
 	err = json.Unmarshal(fileBytes, &outputCreds)
