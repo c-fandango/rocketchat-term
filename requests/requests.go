@@ -28,8 +28,8 @@ func GetRequest(endpoint string, params []map[string]string) ([]byte, error) {
 			q.Set(key, value)
 		}
 	}
+
 	u.RawQuery = q.Encode()
-	fmt.Println(u.String())
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u.String(), nil)
 

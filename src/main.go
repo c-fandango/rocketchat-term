@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var debugMode = true
+var debugMode = false
 var homeDir, _ = os.UserHomeDir()
 var cachePath = homeDir + "/.rocketchat-term"
 
