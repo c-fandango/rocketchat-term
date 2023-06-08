@@ -60,11 +60,11 @@ func fmtContent(content string, replacePatterns map[string]string) string {
 func printMessage(room string, user string, content string, timestamp int) {
 
 	const timeWidth = 15
-	const roomWidth = 23
+	const roomWidth = 24
 	const userWidth = 14
 	const indentWidth = 7
 	const newLineMarkerWidth = 14
-	const roomNameMaxWidth = 24
+	const roomNameMaxWidth = 23
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
 	fgColourCodes256 := []string{
@@ -107,9 +107,13 @@ func printMessage(room string, user string, content string, timestamp int) {
 		`( |^)(@[^\s]+)`:    "${1}" + notifyColour + " ${2} " + resetColour,
 		`( |^)(#\d{6})`:     "${1}" + ticketColour + "${2}" + resetColour,
 		"```((.|\\n)+?)```": codeColour + "${1}" + resetColour,
-		"`((.|\\n)+?)`":     codeColour + "${1}" + resetColour,
 		`(\n)`:              "\n" + strings.Repeat(" ", contentIndent),
 		`(\z)`:              resetColour,
+	}
+
+	// weird but has to be executed after the other code highlighting regex (negative lookarounds are not supported)
+	replaceCodeline := map[string]string{
+		"`((.|\\n)+?)`": codeColour + "${1}" + resetColour,
 	}
 
 	userColour := fgColourCodes256[len(user)%(len(fgColourCodes256)-1)]
@@ -121,7 +125,7 @@ func printMessage(room string, user string, content string, timestamp int) {
 	timePretty := ts.Format(time.Kitchen)
 	timePretty = utils.PadRight(timePretty, " ", timeWidth)
 
-	roomNameMaxIndex := utils.MinInt(roomNameMaxWidth-1, len(room)-1)
+	roomNameMaxIndex := utils.MinInt(roomNameMaxWidth, len(room))
 	room = room[:roomNameMaxIndex]
 	roomFmt := roomColour + " " + room + " " + resetColour
 	userFmt := userColour + user + resetColour
@@ -129,7 +133,7 @@ func printMessage(room string, user string, content string, timestamp int) {
 	roomFmtWidth := roomWidth + len(roomFmt) - len(room)
 	userFmtWidth := userWidth + len(userFmt) - len(user)
 
-	newLine := strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(content, replacePatterns)
+	newLine := strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(fmtContent(content, replacePatterns), replaceCodeline)
 
 	newLine = strings.Repeat("-", newLineMarkerWidth) + "\n" + newLine
 
