@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var debugMode = true
+var debugMode = false
 var homeDir, _ = os.UserHomeDir()
 var cachePath = homeDir + "/.rocketchat-term"
 
@@ -168,9 +168,11 @@ func (a *authResponse) handleResponse(response []byte) error {
 	return err
 }
 
-type rooms []roomSchema
+type rooms struct {
+	Rooms []roomSchema `json:"update"`
+}
 
-func (r rooms) fetchRooms() error {
+func (r *rooms) fetchRooms() error {
 
 	params := make([]map[string]string, 0)
 
@@ -182,32 +184,30 @@ func (r rooms) fetchRooms() error {
 		return err
 	}
 
-	roomResult := struct {
-		Rooms []roomSchema `json:"update"`
-	}{}
+	var roomResult rooms
 	json.Unmarshal(response, roomResult)
 
 	for i, _ := range roomResult.Rooms {
-		r[i].makeName()
+		r.Rooms[i].makeName()
 	}
 
 	return nil
 }
 
-func (r rooms) addMessage(message messageSchema) (roomSchema, error) {
+func (r *rooms) addMessage(message messageSchema) (roomSchema, error) {
 	if message.RoomID == "" {
 		return roomSchema{}, fmt.Errorf("message has no room id")
 	}
-	for i, room := range r {
+	for i, room := range r.Rooms {
 		if room.ID == message.RoomID {
-			r[i].Messages = append(r[i].Messages, message)
+			r.Rooms[i].Messages = append(r.Rooms[i].Messages, message)
 			return room, nil
 		}
 	}
 	return roomSchema{}, fmt.Errorf("failed to match room")
 }
 
-func (r rooms) fetchNewRoom(roomId string) (roomSchema, error) {
+func (r *rooms) fetchNewRoom(roomId string) (roomSchema, error) {
 
 	params := []map[string]string{
 		map[string]string{
@@ -230,7 +230,7 @@ func (r rooms) fetchNewRoom(roomId string) (roomSchema, error) {
 	json.Unmarshal(response, &roomResult)
 
 	roomResult.Room.makeName()
-	r = append(r, roomResult.Room)
+	r.Rooms = append(r.Rooms, roomResult.Room)
 
 	return roomResult.Room, nil
 }
