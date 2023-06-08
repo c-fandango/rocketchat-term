@@ -29,7 +29,7 @@ func getCredentials(cachePath string) (outputCreds map[string]string, err error)
 		return utils.MergeStringMaps(nonSecrets, secrets), nil
 	}
 
-	json.Unmarshal(fileBytes, &outputCreds)
+	err = json.Unmarshal(fileBytes, &outputCreds)
 
-	return outputCreds, nil
+	return outputCreds, err
 }

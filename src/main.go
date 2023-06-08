@@ -7,7 +7,7 @@ import (
 	"github.com/c-fandango/rocketchat-term/requests"
 	"github.com/c-fandango/rocketchat-term/utils"
 	"github.com/gorilla/websocket"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var debugMode = false
+var debugMode = true
 var homeDir, _ = os.UserHomeDir()
 var cachePath = homeDir + "/.rocketchat-term"
 
@@ -99,7 +99,7 @@ func (a *authResponse) authenticateLdap(username string, password string) string
 		LdapOptions map[string]string `json:"ldapOptions"`
 	}
 
-	a.ID = utils.RandID(5)
+	a.ID = utils.RandStr(5)
 
 	request := struct {
 		wssRequest
@@ -126,7 +126,7 @@ func (a *authResponse) authenticateLdap(username string, password string) string
 
 func (a *authResponse) authenticateToken(token string) string {
 
-	a.ID = utils.RandID(5)
+	a.ID = utils.RandStr(5)
 
 	request := struct {
 		wssRequest
@@ -147,7 +147,11 @@ func (a *authResponse) authenticateToken(token string) string {
 }
 
 func (a *authResponse) handleResponse(response []byte) error {
-	json.Unmarshal(response, a)
+	err := json.Unmarshal(response, a)
+
+	if err != nil {
+		return err
+	}
 
 	if a.Error != (errorResponse{}) {
 		creds.ClearCache(cachePath)
@@ -163,7 +167,7 @@ func (a *authResponse) handleResponse(response []byte) error {
 
 	cache, _ := json.Marshal(tokenCache)
 
-	err := creds.WriteCache(cachePath, cache)
+	err = creds.WriteCache(cachePath, cache)
 
 	return err
 }
@@ -184,10 +188,13 @@ func (r *rooms) fetchRooms() error {
 		return err
 	}
 
-	var roomResult rooms
-	json.Unmarshal(response, roomResult)
+	err = json.Unmarshal(response, &r)
 
-	for i, _ := range roomResult.Rooms {
+	if err != nil {
+		return err
+	}
+
+	for i := range r.Rooms {
 		r.Rooms[i].makeName()
 	}
 
@@ -207,11 +214,11 @@ func (r *rooms) addMessage(message messageSchema) (roomSchema, error) {
 	return roomSchema{}, fmt.Errorf("failed to match room")
 }
 
-func (r *rooms) fetchNewRoom(roomId string) (roomSchema, error) {
+func (r *rooms) fetchNewRoom(roomID string) (roomSchema, error) {
 
 	params := []map[string]string{
 		map[string]string{
-			"roomId": roomId,
+			"roomId": roomID,
 		},
 	}
 
@@ -227,7 +234,11 @@ func (r *rooms) fetchNewRoom(roomId string) (roomSchema, error) {
 		Room roomSchema `json:"room"`
 	}{}
 
-	json.Unmarshal(response, &roomResult)
+	err = json.Unmarshal(response, &roomResult)
+
+	if err != nil {
+		return roomSchema{}, err
+	}
 
 	roomResult.Room.makeName()
 	r.Rooms = append(r.Rooms, roomResult.Room)
@@ -246,7 +257,12 @@ type subscription struct {
 func (s *subscription) handleResponse(response []byte, allRooms *rooms) error {
 	const newMessageAllowedDelayMS = 400
 
-	json.Unmarshal(response, s)
+	err := json.Unmarshal(response, s)
+
+	if err != nil {
+		return err
+	}
+
 	for _, message := range s.Fields.Messages {
 
 		if message.UpdateTS.TS > message.SentTS.TS+newMessageAllowedDelayMS {
@@ -277,7 +293,7 @@ func (s *subscription) handleResponse(response []byte, allRooms *rooms) error {
 }
 
 func (s *subscription) constructRequest(roomID string) string {
-	s.ID = utils.RandID(5)
+	s.ID = utils.RandStr(5)
 
 	request := struct {
 		wssRequest
@@ -304,7 +320,7 @@ func main() {
 	if debugMode {
 		log.SetOutput(os.Stdout)
 	} else {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 
 	var auth authResponse
@@ -349,7 +365,11 @@ func main() {
 
 			log.Println(string(response))
 			var data wssResponse
-			json.Unmarshal(response, &data)
+			err = json.Unmarshal(response, &data)
+
+			if err != nil {
+				log.Println("error in unmarshalling incoming message ", err)
+			}
 
 			if data.Message == "connected" {
 				if credentials["token"] != "" {

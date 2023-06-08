@@ -3,7 +3,7 @@ package requests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -29,6 +29,7 @@ func GetRequest(endpoint string, params []map[string]string) ([]byte, error) {
 		}
 	}
 	u.RawQuery = q.Encode()
+	fmt.Println(u.String())
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u.String(), nil)
 
@@ -47,7 +48,7 @@ func GetRequest(endpoint string, params []map[string]string) ([]byte, error) {
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return nil, err

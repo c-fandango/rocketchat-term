@@ -14,7 +14,7 @@ func GetCredentials(keys map[string]string, secrets map[string]string) error {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	for key, _ := range keys {
+	for key := range keys {
 		fmt.Printf("Enter %s: ", key)
 		input, err := reader.ReadString('\n')
 		if err != nil {
@@ -23,9 +23,9 @@ func GetCredentials(keys map[string]string, secrets map[string]string) error {
 		keys[key] = strings.TrimSpace(input)
 	}
 
-	for key, _ := range secrets {
+	for key := range secrets {
 		fmt.Printf("Enter %s: ", key)
-		inputSecret, err := term.ReadPassword(int(syscall.Stdin))
+		inputSecret, err := term.ReadPassword(syscall.Stdin)
 		if err != nil {
 			return err
 		}
@@ -41,14 +41,14 @@ func WriteCache(path string, cache []byte) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			return fmt.Errorf("failed to create directory: %v", err)
+			return fmt.Errorf("failed to create directory: %w", err)
 		}
 	}
 
 	err := os.WriteFile(path, cache, 0644)
 
 	if err != nil {
-		return fmt.Errorf("failed write cache to: %v", err)
+		return fmt.Errorf("failed write cache to: %w", err)
 	}
 
 	return nil
