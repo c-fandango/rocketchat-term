@@ -12,10 +12,11 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 )
 
-var debugMode = false
+var debugMode = true
 var homeDir, _ = os.UserHomeDir()
 var cachePath = homeDir + "/.rocketchat-term"
 
@@ -23,13 +24,6 @@ type userSchema struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
 	Name     string `json:"name"`
-}
-
-type cacheSchema struct {
-	Host      string `json:"host"`
-	User      string `json:"user"`
-	Token     string `json:"token"`
-	ExpiresAt int    `json:"expiresAt"`
 }
 
 type timestampSchema struct {
@@ -160,29 +154,23 @@ func (a *authResponse) handleResponse(response []byte) error {
 		return fmt.Errorf("authorisation failed")
 	}
 
-	tokenCache := cacheSchema{
-		Host:      a.host,
-		User:      a.Result.User,
-		Token:     a.Result.Token,
-		ExpiresAt: a.Result.Expires.TS,
+	tokenCache := map[string]string{
+		"host":      a.host,
+		"user":      a.Result.User,
+		"token":     a.Result.Token,
+		"expiresAt": strconv.Itoa(a.Result.Expires.TS),
 	}
 
 	cache, _ := json.Marshal(tokenCache)
 
 	err := creds.WriteCache(cachePath, cache)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
-type rooms struct {
-	rooms []roomSchema `json:"update"`
-}
+type rooms []roomSchema
 
-func (r *rooms) fetchRooms() error {
+func (r rooms) fetchRooms() error {
 
 	params := make([]map[string]string, 0)
 
@@ -194,29 +182,32 @@ func (r *rooms) fetchRooms() error {
 		return err
 	}
 
-	json.Unmarshal(response, r)
+	roomResult := struct {
+		Rooms []roomSchema `json:"update"`
+	}{}
+	json.Unmarshal(response, roomResult)
 
-	for i, _ := range r.rooms {
-		r.rooms[i].makeName()
+	for i, _ := range roomResult.Rooms {
+		r[i].makeName()
 	}
 
 	return nil
 }
 
-func (r *rooms) addMessage(message messageSchema) (roomSchema, error) {
+func (r rooms) addMessage(message messageSchema) (roomSchema, error) {
 	if message.RoomID == "" {
 		return roomSchema{}, fmt.Errorf("message has no room id")
 	}
-	for i, room := range r.rooms {
+	for i, room := range r {
 		if room.ID == message.RoomID {
-			r.rooms[i].Messages = append(r.rooms[i].Messages, message)
+			r[i].Messages = append(r[i].Messages, message)
 			return room, nil
 		}
 	}
 	return roomSchema{}, fmt.Errorf("failed to match room")
 }
 
-func (r *rooms) fetchNewRoom(roomId string) (roomSchema, error) {
+func (r rooms) fetchNewRoom(roomId string) (roomSchema, error) {
 
 	params := []map[string]string{
 		map[string]string{
@@ -232,17 +223,16 @@ func (r *rooms) fetchNewRoom(roomId string) (roomSchema, error) {
 		return roomSchema{}, err
 	}
 
-	type roomResult struct {
+	roomResult := struct {
 		Room roomSchema `json:"room"`
-	}
+	}{}
 
-	var room roomResult
-	json.Unmarshal(response, &room)
+	json.Unmarshal(response, &roomResult)
 
-	room.Room.makeName()
-	r.rooms = append(r.rooms, room.Room)
+	roomResult.Room.makeName()
+	r = append(r, roomResult.Room)
 
-	return room.Room, nil
+	return roomResult.Room, nil
 }
 
 type subscription struct {
@@ -379,7 +369,7 @@ func main() {
 				requests.Token = auth.Result.Token
 				requests.User = auth.Result.User
 
-				allRooms.fetchRooms()
+				err = allRooms.fetchRooms()
 
 				if err != nil {
 					fmt.Println(err)

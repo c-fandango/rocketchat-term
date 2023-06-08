@@ -6,9 +6,7 @@ import (
 	"github.com/c-fandango/rocketchat-term/utils"
 )
 
-func getCredentials(cachePath string) (map[string]string, error) {
-	var cache cacheSchema
-	outputCreds := map[string]string{}
+func getCredentials(cachePath string) (outputCreds map[string]string, err error) {
 
 	fileBytes, err := creds.ReadCache(cachePath)
 
@@ -31,9 +29,7 @@ func getCredentials(cachePath string) (map[string]string, error) {
 		return utils.MergeStringMaps(nonSecrets, secrets), nil
 	}
 
-	json.Unmarshal(fileBytes, &cache)
-	outputCreds["host"] = cache.Host
-	outputCreds["token"] = cache.Token
+	json.Unmarshal(fileBytes, &outputCreds)
 
 	return outputCreds, nil
 }
