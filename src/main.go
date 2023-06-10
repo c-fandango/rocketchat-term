@@ -3,10 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/c-fandango/rocketchat-term/creds"
-	"github.com/c-fandango/rocketchat-term/requests"
-	"github.com/c-fandango/rocketchat-term/utils"
-	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net/url"
@@ -14,6 +10,11 @@ import (
 	"os/signal"
 	"strconv"
 	"time"
+
+	"github.com/c-fandango/rocketchat-term/creds"
+	"github.com/c-fandango/rocketchat-term/requests"
+	"github.com/c-fandango/rocketchat-term/utils"
+	"github.com/gorilla/websocket"
 )
 
 var debugMode = false
@@ -323,13 +324,10 @@ func main() {
 		log.SetOutput(io.Discard)
 	}
 
-	var auth authResponse
-
 	credentials, err := getCredentials(cachePath)
 	if err != nil {
 		fmt.Println(err)
 	}
-	auth.host = credentials["host"]
 
 	u := url.URL{Scheme: "wss", Host: credentials["host"], Path: "/websocket"}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -340,12 +338,6 @@ func main() {
 
 	defer c.Close()
 
-	var allRooms rooms
-	var roomSub subscription
-	roomSub.Collection = "stream-room-messages"
-	connectMessage := `{"msg": "connect","version": "1","support": ["1"]}`
-	pongMessage := `{"msg": "pong"}`
-
 	done := make(chan struct{})
 	messageOut := make(chan string)
 	interrupt := make(chan os.Signal, 1)
@@ -353,6 +345,12 @@ func main() {
 
 	go func() {
 		defer close(done)
+		var allRooms rooms
+		var auth authResponse
+		var roomSub subscription
+		roomSub.Collection = "stream-room-messages"
+		pongMessage := `{"msg": "pong"}`
+		connectMessage := `{"msg": "connect","version": "1","support": ["1"]}`
 		messageOut <- connectMessage
 
 		// TODO don't busy loop
@@ -385,7 +383,7 @@ func main() {
 				}
 
 				fmt.Println("authenticated")
-				requests.Host = auth.host
+				requests.Host = credentials["hostname"]
 				requests.Token = auth.Result.Token
 				requests.User = auth.Result.User
 

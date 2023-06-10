@@ -3,11 +3,12 @@ package creds
 import (
 	"bufio"
 	"fmt"
-	"golang.org/x/term"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"golang.org/x/term"
 )
 
 func GetUserInput(prompt string, secret bool) string {

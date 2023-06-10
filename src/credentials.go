@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+
 	"github.com/c-fandango/rocketchat-term/creds"
 )
 

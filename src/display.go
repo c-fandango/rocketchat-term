@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/c-fandango/rocketchat-term/utils"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/c-fandango/rocketchat-term/utils"
 )
 
 func makeInitials(name string, delimiter string) string {
