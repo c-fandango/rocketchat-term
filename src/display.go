@@ -60,13 +60,7 @@ func fmtContent(content string, replacePatterns map[string]string) string {
 
 func printMessage(room string, user string, content string, timestamp int) {
 
-	const timeWidth = 15
-	const roomWidth = 24
-	const userWidth = 14
-	const indentWidth = 7
-	const newLineMarkerWidth = 14
-	const roomNameMaxWidth = 23
-	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
+	var contentIndent = config.timeWidth + config.roomWidth + config.userWidth + config.indentWidth + 2
 
 	resetColour := "\033[0m"
 	ticketColour := "\033[38;5;39m" // deepSkyBlue1
@@ -96,19 +90,19 @@ func printMessage(room string, user string, content string, timestamp int) {
 
 	ts := time.UnixMilli(int64(timestamp))
 	timePretty := ts.Format(time.Kitchen)
-	timePretty = utils.PadRight(timePretty, " ", timeWidth)
+	timePretty = utils.PadRight(timePretty, " ", config.timeWidth)
 
-	roomNameMaxIndex := utils.MinInt(roomNameMaxWidth, len(room))
+	roomNameMaxIndex := utils.MinInt(config.roomNameMaxWidth, len(room))
 	room = room[:roomNameMaxIndex]
 	roomFmt := roomColour + " " + room + " " + resetColour
 	userFmt := userColour + user + resetColour
 
-	roomFmtWidth := roomWidth + len(roomFmt) - len(room)
-	userFmtWidth := userWidth + len(userFmt) - len(user)
+	roomFmtWidth := config.roomWidth + len(roomFmt) - len(room)
+	userFmtWidth := config.userWidth + len(userFmt) - len(user)
 
-	newLine := strings.Repeat(" ", indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(fmtContent(content, replacePatterns), replaceCodeline)
+	newLine := strings.Repeat(" ", config.indentWidth) + timePretty + utils.PadRight(roomFmt, " ", roomFmtWidth) + utils.PadRight(userFmt, " ", userFmtWidth) + fmtContent(fmtContent(content, replacePatterns), replaceCodeline)
 
-	newLine = strings.Repeat("-", newLineMarkerWidth) + "\n" + newLine
+	newLine = strings.Repeat("-", config.newLineMarkerWidth) + "\n" + newLine
 
 	fmt.Println(newLine)
 }

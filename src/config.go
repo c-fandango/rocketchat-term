@@ -26,23 +26,25 @@ var defaultCols = []string{
 	"220", // gold1
 }
 
-var black = []string{
-	"\033[38;5;0m",
-}
-var nothing = []string{
-	"\033[0m",
-}
+var black = []string{"\033[38;5;0m"}
+var nothing = []string{"\033[0m"}
 
 const defaultCode = "\033[38;5;186m"
 const defaultNotify = "\033[48;5;160m"
 
-type configTemplate struct {
-	userTextColours []string
-	userBgColours   []string
-	roomTextColours []string
-	roomBgColours   []string
-	codeColour      string
-	notifyColour    string
+type configSchema struct {
+	userTextColours    []string
+	userBgColours      []string
+	roomTextColours    []string
+	roomBgColours      []string
+	codeColour         string
+	notifyColour       string
+	timeWidth          int
+	roomWidth          int
+	userWidth          int
+	indentWidth        int
+	newLineMarkerWidth int
+	roomNameMaxWidth   int
 }
 
 func hexToAnsi(prefix string) func(string) string {
@@ -61,11 +63,38 @@ func numToAnsi(prefix string) func(string) string {
 	}
 }
 
-func (c *configTemplate) loadConf(path string) {
+func (c *configSchema) loadConf(path string) {
 	var k = koanf.New(".")
 
 	if _, err := os.Stat(path); err == nil {
 		k.Load(file.Provider(path), yaml.Parser())
+	}
+
+	// set indent defaults
+	c.timeWidth = 15
+	c.roomWidth = 24
+	c.userWidth = 14
+	c.indentWidth = 7
+	c.newLineMarkerWidth = 14
+	c.roomNameMaxWidth = 23
+
+	if n := k.Int("spacing.time"); n != 0 {
+		c.timeWidth = n
+	}
+	if n := k.Int("spacing.room"); n != 0 {
+		c.roomWidth = n
+	}
+	if n := k.Int("spacing.user"); n != 0 {
+		c.userWidth = n
+	}
+	if n := k.Int("spacing.indent"); n != 0 {
+		c.indentWidth = n
+	}
+	if n := k.Int("spacing.marker"); n != 0 {
+		c.newLineMarkerWidth = n
+	}
+	if n := k.Int("spacing.room_max_length"); n != 0 {
+		c.roomNameMaxWidth = n
 	}
 
 	// set colour defaults
@@ -75,6 +104,10 @@ func (c *configTemplate) loadConf(path string) {
 	c.roomBgColours = utils.MapperStr(defaultCols, numToAnsi("\033[48;5"))
 	c.codeColour = defaultCode
 	c.notifyColour = defaultNotify
+
+	k.UnmarshalWithConf("", &c, koanf.UnmarshalConf{Tag: "koanf"})
+
+	fmt.Printf("%+v\n", c)
 
 	if len(k.Strings("colours.user_text")) != 0 {
 		c.userTextColours = utils.MapperStr(k.Strings("colours.user_text"), hexToAnsi("\033[38;2"))

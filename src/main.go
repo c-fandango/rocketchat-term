@@ -22,7 +22,7 @@ var homeDir, _ = os.UserHomeDir()
 var dataDir = homeDir + "/.rocketchat-term"
 var cachePath = dataDir + "/cache.json"
 var configPath = dataDir + "/rocketchat-term.yaml"
-var config configTemplate
+var config configSchema
 
 type userSchema struct {
 	ID       string `json:"id"`
