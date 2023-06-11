@@ -45,6 +45,7 @@ type configSchema struct {
 	indentWidth        int
 	newLineMarkerWidth int
 	roomNameMaxWidth   int
+	debug              bool
 }
 
 func hexToAnsi(prefix string) func(string) string {
@@ -70,6 +71,9 @@ func (c *configSchema) loadConf(path string) {
 		k.Load(file.Provider(path), yaml.Parser())
 	}
 
+	// read logging opts
+	c.debug = k.Bool("logging.debug")
+
 	// set indent defaults
 	c.timeWidth = 15
 	c.roomWidth = 24
@@ -78,6 +82,7 @@ func (c *configSchema) loadConf(path string) {
 	c.newLineMarkerWidth = 14
 	c.roomNameMaxWidth = 23
 
+	// read indent opts
 	if n := k.Int("spacing.time"); n != 0 {
 		c.timeWidth = n
 	}
@@ -105,10 +110,7 @@ func (c *configSchema) loadConf(path string) {
 	c.codeColour = defaultCode
 	c.notifyColour = defaultNotify
 
-	k.UnmarshalWithConf("", &c, koanf.UnmarshalConf{Tag: "koanf"})
-
-	fmt.Printf("%+v\n", c)
-
+	// read colour opts
 	if len(k.Strings("colours.user_text")) != 0 {
 		c.userTextColours = utils.MapperStr(k.Strings("colours.user_text"), hexToAnsi("\033[38;2"))
 	} else if len(k.Strings("colours256.user_text")) != 0 {

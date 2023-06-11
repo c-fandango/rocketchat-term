@@ -323,7 +323,7 @@ func main() {
 
 	config.loadConf(configPath)
 
-	if debugMode {
+	if config.debug {
 		log.SetOutput(os.Stdout)
 	} else {
 		log.SetOutput(io.Discard)
