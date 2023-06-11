@@ -38,13 +38,13 @@ func WriteCache(path string, cache []byte) error {
 	dir := filepath.Dir(path)
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.MkdirAll(dir, 0755)
+		err := os.MkdirAll(dir, 0700)
 		if err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 	}
 
-	err := os.WriteFile(path, cache, 0644)
+	err := os.WriteFile(path, cache, 0600)
 
 	if err != nil {
 		return fmt.Errorf("failed write cache to: %w", err)
