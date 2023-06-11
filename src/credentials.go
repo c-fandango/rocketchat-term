@@ -12,16 +12,25 @@ func getCredentials(cachePath string) (map[string]string, error) {
 
 	outputCreds := make(map[string]string)
 
-	if err != nil {
+	if err == nil {
 
-		outputCreds["host"] = creds.GetUserInput("Enter host: ", false)
-		outputCreds["username"] = creds.GetUserInput("Enter username: ", false)
-		outputCreds["password"] = creds.GetUserInput("Enter password: ", true)
+		err = json.Unmarshal(fileBytes, &outputCreds)
 
-		return outputCreds, nil
+		return outputCreds, err
 	}
 
-	err = json.Unmarshal(fileBytes, &outputCreds)
+	if config.host == "" {
+		outputCreds["host"] = creds.GetUserInput("Enter host: ", false)
+	} else {
+		outputCreds["host"] = config.host
+	}
+
+	if config.token == "" {
+		outputCreds["username"] = creds.GetUserInput("Enter username: ", false)
+		outputCreds["password"] = creds.GetUserInput("Enter password: ", true)
+	} else {
+		outputCreds["token"] = config.token
+	}
 
 	return outputCreds, err
 }

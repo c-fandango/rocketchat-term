@@ -33,19 +33,24 @@ const defaultCode = "\033[38;5;186m"
 const defaultNotify = "\033[48;5;160m"
 
 type configSchema struct {
-	userTextColours    []string
-	userBgColours      []string
-	roomTextColours    []string
-	roomBgColours      []string
-	codeColour         string
-	notifyColour       string
+	host  string
+	token string
+
+	userTextColours []string
+	userBgColours   []string
+	roomTextColours []string
+	roomBgColours   []string
+	codeColour      string
+	notifyColour    string
+
 	timeWidth          int
 	roomWidth          int
 	userWidth          int
 	indentWidth        int
 	newLineMarkerWidth int
 	roomNameMaxWidth   int
-	debug              bool
+
+	debug bool
 }
 
 func hexToAnsi(prefix string) func(string) string {
@@ -73,6 +78,10 @@ func (c *configSchema) loadConf(path string) {
 
 	// read logging opts
 	c.debug = k.Bool("logging.debug")
+
+	// read connection opts
+	c.host = k.String("connection.host")
+	c.token = k.String("connection.token")
 
 	// set indent defaults
 	c.timeWidth = 15
