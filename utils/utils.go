@@ -2,7 +2,9 @@
 package utils
 
 import (
+	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -57,4 +59,39 @@ func ReplaceEveryOther(input string, target string, replace string) string {
 		inputSplt[i] = replace + inputSplt[i] + target
 	}
 	return strings.Join(inputSplt, "")
+}
+
+func MapperStr(input []string, f func(string) string) []string {
+	output := make([]string, len(input), len(input))
+
+	for i, item := range input {
+		output[i] = f(item)
+	}
+	return output
+}
+
+func HexToRGB(hexCode string) (int, int, int, error) {
+	if len(hexCode) != 6 {
+		if len(hexCode) != 7 || hexCode[0] != '#' {
+			return 0, 0, 0, fmt.Errorf("invalid hexcode: %s expecting e.g #ff123a", hexCode)
+		}
+		hexCode = hexCode[1:]
+	}
+
+	r, err := strconv.ParseInt(hexCode[:2], 16, 0)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	g, err := strconv.ParseInt(hexCode[2:4], 16, 0)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	b, err := strconv.ParseInt(hexCode[4:], 16, 0)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	return int(r), int(g), int(b), nil
 }
