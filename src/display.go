@@ -68,57 +68,25 @@ func printMessage(room string, user string, content string, timestamp int) {
 	const roomNameMaxWidth = 23
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
-	fgColourCodes256 := []string{
-		"\033[38;5;2m",   // green
-		"\033[38;5;5m",   // purple
-		"\033[38;5;6m",   // teal
-		"\033[38;5;40m",  // green3
-		"\033[38;5;87m",  // darkSlateGray2
-		"\033[38;5;130m", // darkOrange3
-		"\033[38;5;148m", // yellow3
-		"\033[38;5;158m", // darkSeaGreen1
-		"\033[38;5;169m", // hotPink2
-		"\033[38;5;171m", // mediumOrchid1
-		"\033[38;5;214m", // orange1
-		"\033[38;5;220m", // gold1
-	}
-
-	bgColourCodes256 := []string{
-		"\033[48;5;2m",   // green
-		"\033[48;5;5m",   // purple
-		"\033[48;5;6m",   // teal
-		"\033[48;5;40m",  // green3
-		"\033[48;5;87m",  // darkSlateGray2
-		"\033[48;5;130m", // darkOrange3
-		"\033[48;5;148m", // yellow3
-		"\033[48;5;158m", // darkSeaGreen1
-		"\033[48;5;169m", // hotPink2
-		"\033[48;5;171m", // mediumOrchid1
-		"\033[48;5;214m", // orange1
-		"\033[48;5;220m", // gold1
-	}
-
 	resetColour := "\033[0m"
 	blackText := "\033[38;5;0m"
-	codeColour := "\033[38;5;186m"   // lightGoldenrod2
-	notifyColour := "\033[48;5;160m" // red3
-	ticketColour := "\033[38;5;39m"  // deepSkyBlue1
+	ticketColour := "\033[38;5;39m" // deepSkyBlue1
 
 	replacePatterns := map[string]string{
-		`( |^)(@[^\s]+)`:    "${1}" + notifyColour + " ${2} " + resetColour,
-		`( |^)(#\d{6})`:     "${1}" + ticketColour + "${2}" + resetColour,
-		"```((.|\\n)+?)```": codeColour + "${1}" + resetColour,
+		`( |^)(@[^\s]+)`:    fmt.Sprintf("${1}%s ${2} %s", config.notifyColour, resetColour),
+		`( |^)(#\d{6})`:     fmt.Sprintf("${1}%s${2}%s", ticketColour, resetColour),
+		"```((.|\\n)+?)```": fmt.Sprintf("%s${1}%s", config.codeColour, resetColour),
 		`(\n)`:              "\n" + strings.Repeat(" ", contentIndent),
 		`(\z)`:              resetColour,
 	}
 
 	// weird but has to be executed after the other code highlighting regex (negative lookarounds are not supported)
 	replaceCodeline := map[string]string{
-		"`((.|\\n)+?)`": codeColour + "${1}" + resetColour,
+		"`((.|\\n)+?)`": config.codeColour + "${1}" + resetColour,
 	}
 
-	userColour := fgColourCodes256[len(user)%(len(fgColourCodes256)-1)]
-	roomColour := bgColourCodes256[len(room)%(len(bgColourCodes256)-1)] + blackText
+	userColour := config.textColours[len(user)%(len(config.textColours)-1)]
+	roomColour := config.bgColours[len(room)%(len(config.bgColours)-1)] + blackText
 
 	user = makeShortName(user)
 

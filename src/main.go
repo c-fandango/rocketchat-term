@@ -19,7 +19,10 @@ import (
 
 var debugMode = false
 var homeDir, _ = os.UserHomeDir()
-var cachePath = homeDir + "/.rocketchat-term"
+var dataDir = homeDir + "/.rocketchat-term"
+var cachePath = dataDir + "/cache.json"
+var configPath = dataDir + "/rocketchat-term.yaml"
+var config configTemplate
 
 type userSchema struct {
 	ID       string `json:"id"`
@@ -318,6 +321,8 @@ func (s *subscription) constructRequest(roomID string) string {
 func main() {
 	fmt.Println("hello world")
 
+	config.loadConf(configPath)
+
 	if debugMode {
 		log.SetOutput(os.Stdout)
 	} else {
@@ -333,6 +338,7 @@ func main() {
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 
 	if err != nil {
+		creds.ClearCache(cachePath)
 		panic("invalid host")
 	}
 
@@ -351,6 +357,7 @@ func main() {
 		roomSub.Collection = "stream-room-messages"
 		pongMessage := `{"msg": "pong"}`
 		connectMessage := `{"msg": "connect","version": "1","support": ["1"]}`
+		auth.host = credentials["host"]
 		messageOut <- connectMessage
 
 		// TODO don't busy loop
@@ -383,7 +390,7 @@ func main() {
 				}
 
 				fmt.Println("authenticated")
-				requests.Host = credentials["hostname"]
+				requests.Host = auth.host
 				requests.Token = auth.Result.Token
 				requests.User = auth.Result.User
 
