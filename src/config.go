@@ -26,14 +26,23 @@ var defaultCols = []string{
 	"220", // gold1
 }
 
-const defaultCode = "186"
-const defaultNotify = "160"
+var black = []string{
+	"\033[38;5;0m",
+}
+var nothing = []string{
+	"\033[0m",
+}
+
+const defaultCode = "\033[38;5;186m"
+const defaultNotify = "\033[48;5;160m"
 
 type configTemplate struct {
-	textColours  []string
-	bgColours    []string
-	codeColour   string
-	notifyColour string
+	userTextColours []string
+	userBgColours   []string
+	roomTextColours []string
+	roomBgColours   []string
+	codeColour      string
+	notifyColour    string
 }
 
 func hexToAnsi(prefix string) func(string) string {
@@ -59,35 +68,48 @@ func (c *configTemplate) loadConf(path string) {
 		k.Load(file.Provider(path), yaml.Parser())
 	}
 
-	if len(k.Strings("colours.text")) != 0 {
-		c.textColours = utils.MapperStr(k.Strings("colours.text"), hexToAnsi("\033[38;2"))
-	} else if len(k.Strings("colours256.text")) != 0 {
-		c.textColours = utils.MapperStr(k.Strings("colours256.text"), numToAnsi("\033[38;5"))
-	} else {
-		c.textColours = utils.MapperStr(defaultCols, numToAnsi("\033[38;5"))
+	// set colour defaults
+	c.userTextColours = utils.MapperStr(defaultCols, numToAnsi("\033[38;5"))
+	c.userBgColours = nothing
+	c.roomTextColours = black
+	c.roomBgColours = utils.MapperStr(defaultCols, numToAnsi("\033[48;5"))
+	c.codeColour = defaultCode
+	c.notifyColour = defaultNotify
+
+	if len(k.Strings("colours.user_text")) != 0 {
+		c.userTextColours = utils.MapperStr(k.Strings("colours.user_text"), hexToAnsi("\033[38;2"))
+	} else if len(k.Strings("colours256.user_text")) != 0 {
+		c.userTextColours = utils.MapperStr(k.Strings("colours256.user_text"), numToAnsi("\033[38;5"))
 	}
 
-	if len(k.Strings("colours.highlights")) != 0 {
-		c.bgColours = utils.MapperStr(k.Strings("colours.highlights"), hexToAnsi("\033[48;2"))
-	} else if len(k.Strings("colours256.highlights")) != 0 {
-		c.bgColours = utils.MapperStr(k.Strings("colours256.highlights"), numToAnsi("\033[48;5"))
-	} else {
-		c.bgColours = utils.MapperStr(defaultCols, numToAnsi("\033[48;5"))
+	if len(k.Strings("colours.user_highlight")) != 0 {
+		c.userBgColours = utils.MapperStr(k.Strings("colours.highlight"), hexToAnsi("\033[48;2"))
+	} else if len(k.Strings("colours256.user_highlight")) != 0 {
+		c.userBgColours = utils.MapperStr(k.Strings("colours256.highlight"), numToAnsi("\033[48;5"))
+	}
+
+	if len(k.Strings("colours.room_text")) != 0 {
+		c.roomTextColours = utils.MapperStr(k.Strings("colours.room_text"), hexToAnsi("\033[38;2"))
+	} else if len(k.Strings("colours256.room_text")) != 0 {
+		c.roomTextColours = utils.MapperStr(k.Strings("colours256.room_text"), numToAnsi("\033[38;5"))
+	}
+
+	if len(k.Strings("colours.room_highlight")) != 0 {
+		c.roomBgColours = utils.MapperStr(k.Strings("colours.highlight"), hexToAnsi("\033[48;2"))
+	} else if len(k.Strings("colours256.room_highlight")) != 0 {
+		c.roomBgColours = utils.MapperStr(k.Strings("colours256.highlight"), numToAnsi("\033[48;5"))
 	}
 
 	if len(k.String("colours.code")) != 0 {
 		c.codeColour = hexToAnsi("\033[38;2")(k.String("colours.code"))
 	} else if len(k.String("colours256.code")) != 0 {
 		c.codeColour = numToAnsi("\033[38;5")(k.String("colours256.code"))
-	} else {
-		c.codeColour = numToAnsi("\033[38;5")(defaultCode)
 	}
 
 	if len(k.String("colours.notify")) != 0 {
 		c.notifyColour = hexToAnsi("\033[48;2")(k.String("colours.notify"))
 	} else if len(k.String("colours256.notify")) != 0 {
 		c.notifyColour = numToAnsi("\033[48;5")(k.String("colours256.notify"))
-	} else {
-		c.notifyColour = numToAnsi("\033[48;5")(defaultNotify)
 	}
+
 }

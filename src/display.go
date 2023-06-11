@@ -69,7 +69,6 @@ func printMessage(room string, user string, content string, timestamp int) {
 	const contentIndent = timeWidth + roomWidth + userWidth + indentWidth + 2
 
 	resetColour := "\033[0m"
-	blackText := "\033[38;5;0m"
 	ticketColour := "\033[38;5;39m" // deepSkyBlue1
 
 	replacePatterns := map[string]string{
@@ -85,8 +84,13 @@ func printMessage(room string, user string, content string, timestamp int) {
 		"`((.|\\n)+?)`": config.codeColour + "${1}" + resetColour,
 	}
 
-	userColour := config.textColours[len(user)%(len(config.textColours)-1)]
-	roomColour := config.bgColours[len(room)%(len(config.bgColours)-1)] + blackText
+	userTextColour := config.userTextColours[len(user)%len(config.userTextColours)]
+	roomTextColour := config.roomTextColours[len(room)%len(config.roomTextColours)]
+	userBgColour := config.userBgColours[len(user)%len(config.userBgColours)]
+	roomBgColour := config.roomBgColours[len(room)%len(config.roomBgColours)]
+
+	userColour := userBgColour + userTextColour
+	roomColour := roomBgColour + roomTextColour
 
 	user = makeShortName(user)
 
