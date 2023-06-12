@@ -31,6 +31,7 @@ var nothing = []string{"\033[0m"}
 
 const defaultCode = "\033[38;5;186m"
 const defaultNotify = "\033[48;5;160m"
+const defaultTicket = "\033[38;5;39m"
 
 type configSchema struct {
 	host  string
@@ -42,6 +43,7 @@ type configSchema struct {
 	roomBgColours   []string
 	codeColour      string
 	notifyColour    string
+	ticketColour    string
 
 	timeWidth          int
 	roomWidth          int
@@ -118,6 +120,7 @@ func (c *configSchema) loadConf(path string) {
 	c.roomBgColours = utils.MapperStr(defaultCols, numToAnsi("\033[48;5"))
 	c.codeColour = defaultCode
 	c.notifyColour = defaultNotify
+	c.ticketColour = defaultTicket
 
 	// read colour opts
 	if len(k.Strings("colours.user_text")) != 0 {
@@ -156,4 +159,9 @@ func (c *configSchema) loadConf(path string) {
 		c.notifyColour = numToAnsi("\033[48;5")(k.String("colours256.notify"))
 	}
 
+	if len(k.String("colours.ticket")) != 0 {
+		c.ticketColour = hexToAnsi("\033[48;2")(k.String("colours.ticket"))
+	} else if len(k.String("colours256.ticket")) != 0 {
+		c.ticketColour = numToAnsi("\033[48;5")(k.String("colours256.ticket"))
+	}
 }

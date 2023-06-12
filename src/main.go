@@ -17,7 +17,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var debugMode = false
 var homeDir, _ = os.UserHomeDir()
 var dataDir = homeDir + "/.rocketchat-term"
 var cachePath = dataDir + "/cache.json"
@@ -319,7 +318,6 @@ func (s *subscription) constructRequest(roomID string) string {
 }
 
 func main() {
-	fmt.Println("hello world")
 
 	config.loadConf(configPath)
 
@@ -331,7 +329,7 @@ func main() {
 
 	credentials, err := getCredentials(cachePath)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	u := url.URL{Scheme: "wss", Host: credentials["host"], Path: "/websocket"}

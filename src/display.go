@@ -61,13 +61,11 @@ func fmtContent(content string, replacePatterns map[string]string) string {
 func printMessage(room string, user string, content string, timestamp int) {
 
 	var contentIndent = config.timeWidth + config.roomWidth + config.userWidth + config.indentWidth + 2
-
 	resetColour := "\033[0m"
-	ticketColour := "\033[38;5;39m" // deepSkyBlue1
 
 	replacePatterns := map[string]string{
 		`( |^)(@[^\s]+)`:    fmt.Sprintf("${1}%s ${2} %s", config.notifyColour, resetColour),
-		`( |^)(#\d{6})`:     fmt.Sprintf("${1}%s${2}%s", ticketColour, resetColour),
+		`( |^)(#\d{6})`:     fmt.Sprintf("${1}%s${2}%s", config.ticketColour, resetColour),
 		"```((.|\\n)+?)```": fmt.Sprintf("%s${1}%s", config.codeColour, resetColour),
 		`(\n)`:              "\n" + strings.Repeat(" ", contentIndent),
 		`(\z)`:              resetColour,
