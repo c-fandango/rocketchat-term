@@ -75,7 +75,10 @@ func (c *configSchema) loadConf(path string) {
 	var k = koanf.New(".")
 
 	if _, err := os.Stat(path); err == nil {
-		k.Load(file.Provider(path), yaml.Parser())
+		err = k.Load(file.Provider(path), yaml.Parser())
+                if err != nil {
+                    panic("failed to parse yaml file")
+                }
 	}
 
 	// read logging opts
@@ -130,9 +133,9 @@ func (c *configSchema) loadConf(path string) {
 	}
 
 	if len(k.Strings("colours.user_highlight")) != 0 {
-		c.userBgColours = utils.MapperStr(k.Strings("colours.highlight"), hexToAnsi("\033[48;2"))
+		c.userBgColours = utils.MapperStr(k.Strings("colours.user_highlight"), hexToAnsi("\033[48;2"))
 	} else if len(k.Strings("colours256.user_highlight")) != 0 {
-		c.userBgColours = utils.MapperStr(k.Strings("colours256.highlight"), numToAnsi("\033[48;5"))
+		c.userBgColours = utils.MapperStr(k.Strings("colours256.user_highlight"), numToAnsi("\033[48;5"))
 	}
 
 	if len(k.Strings("colours.room_text")) != 0 {
@@ -142,9 +145,9 @@ func (c *configSchema) loadConf(path string) {
 	}
 
 	if len(k.Strings("colours.room_highlight")) != 0 {
-		c.roomBgColours = utils.MapperStr(k.Strings("colours.highlight"), hexToAnsi("\033[48;2"))
+		c.roomBgColours = utils.MapperStr(k.Strings("colours.room_highlight"), hexToAnsi("\033[48;2"))
 	} else if len(k.Strings("colours256.room_highlight")) != 0 {
-		c.roomBgColours = utils.MapperStr(k.Strings("colours256.highlight"), numToAnsi("\033[48;5"))
+		c.roomBgColours = utils.MapperStr(k.Strings("colours256.room_highlight"), numToAnsi("\033[48;5"))
 	}
 
 	if len(k.String("colours.code")) != 0 {
@@ -160,8 +163,8 @@ func (c *configSchema) loadConf(path string) {
 	}
 
 	if len(k.String("colours.ticket")) != 0 {
-		c.ticketColour = hexToAnsi("\033[48;2")(k.String("colours.ticket"))
+		c.ticketColour = hexToAnsi("\033[38;2")(k.String("colours.ticket"))
 	} else if len(k.String("colours256.ticket")) != 0 {
-		c.ticketColour = numToAnsi("\033[48;5")(k.String("colours256.ticket"))
+		c.ticketColour = numToAnsi("\033[38;5")(k.String("colours256.ticket"))
 	}
 }
