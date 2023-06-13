@@ -1,0 +1,61 @@
+# example config file for rocketchat-term
+# any value not specified will revert to the default
+# config file should have the path ~/.rocketchat-term/rocketchat-term.yaml
+
+# colours for newer terminals supporting full rgb colours,
+# specify colours by hexcode 
+# these take precedence over 256-colours
+colours:
+  room_highlight:
+    - '#5fffd7'
+    - '#008080'
+    - '#00ffd7'
+    - '#8700ff'
+    - '#af5f00'
+    - '#d7af00'
+  room_text:
+    - '#afff5f'
+  user_highlight:
+    - '#d70000'
+  user_text:
+    - '#afd7ff'
+
+  notify: '#ff0087'
+  code: '#af5fff'
+  ticket: '#ff0000'
+
+# colours for old terminals that don't support full rgb colouring,
+# values are xterm/256 color-scheme ansi codes
+# hex colours take precedence over these
+colours256:
+  room_highlights:
+    - 1
+  room_text:
+    - 14
+  user_highlight:
+    - 1
+  user_text:
+    - 14
+  notify: 2
+  code: 2
+  ticket: 2
+
+# spacing vars dictating the width of each element in printed lines
+spacing:
+    indent: 20 
+    time: 20
+    room: 40
+    user: 20
+    marker: 20
+    room_max_length: 16
+
+# connection info, host and token
+# values in the cache will take precedence over these unless cache creds are invalid
+connection:
+  host: my-host-name
+  token: my-secret-token 
+
+# debug bool, if true then prints info to stdout
+# if false then no logging is given
+logging:
+  debug: false
