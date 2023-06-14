@@ -12,6 +12,7 @@ It is best to put the binary in a place specified in your `$PATH` environment va
 
 Authentication can be done via a standard username and password, an LDAP username and password or via a token.
 For token authentication, see the example config in the config directory.
+All connections are sent with TLS encryption.
 
 rocketchat-term caches tokens it recieves in `~/.rocketchat-term/`
 
