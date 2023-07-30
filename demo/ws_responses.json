@@ -1,0 +1,499 @@
+{
+  "init": [
+    {
+      "response": {
+        "msg": "connected",
+        "session": "tmKfASQJXviR8rrJw"
+      },
+      "trigger_msg": "connect"
+    },
+    {
+      "response": {
+        "msg": "result",
+        "id": "QSagg",
+        "result": {
+          "id": "u2bbopt3h5FESD4zd",
+          "token": "f9OneYrBW4L5sMPlrFYVYlSh23qhZq63iAK-lyXU42z",
+          "tokenExpires": {
+            "$date": 1698424619586
+          },
+          "type": "resume"
+        }
+      },
+      "trigger_msg": "method"
+    }
+  ],
+  "room_msgs": [
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "zXSu6QM4MfGvdkEfX",
+              "rid": "cRswDPaKpQamGYcrX",
+              "msg": "hello",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "edward.walton",
+                "name": "Edward Walton"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 3
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "zXSu6QM4MfGvdkEfX",
+              "rid": "cRswDPaKpQamGYcrX",
+              "msg": "@richard.stallman , my python script keeps failing - can anyone help pls?",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "linus.torvalds",
+                "name": "Linus"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 3
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "zXSu6QM4MfGvdkEfX",
+              "rid": "cRswDPaKpQamGYcrX",
+              "msg": "yeah sure, can you post a stack-trace?",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "richard.stallman",
+                "name": "Richard Stallman"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 4
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "zXSu6QM4MfGvdkEfX",
+              "rid": "cRswDPaKpQamGYcrX",
+              "msg": "here it is\n```Traceback (most recent call last):\n  File \"<stdin>\", line 2, in <module>\nNameError: name 'json' is not defined```",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "linus.torvalds",
+                "name": "Linus"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 4
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "zXSu6QM4MfGvdkEfX",
+              "rid": "cRswDPaKpQamGYcrX",
+              "msg": "ah, you probably forgot to ```import json```",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "richard.stallman",
+                "name": "Richard Stallman"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 2
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "zXSu6QM4MfGvdkEfX",
+              "rid": "cRswDPaKpQamGYcrX",
+              "msg": "thank you!!",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "linus.torvalds",
+                "name": "Linus"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 3
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "K8J4wv4rheS9X79Gx",
+              "rid": "K8J4wv4rheS9X79Gx",
+              "msg": "@here is this feature ready for release #235235",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "elon.musk",
+                "name": "Elon Musk"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 3
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "K8J4wv4rheS9X79Gx",
+              "rid": "K8J4wv4rheS9X79Gx",
+              "msg": "almost! my merge request requires review",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "bill.gates",
+                "name": "Bill Gates"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 4
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "K8J4wv4rheS9X79Gx",
+              "rid": "K8J4wv4rheS9X79Gx",
+              "msg": "I've reviewed - looks good to me",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "mark.zuckerberg",
+                "name": "Mark Zuckerberg"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 3
+    },
+    {
+      "response": {
+        "msg": "changed",
+        "collection": "stream-room-messages",
+        "id": "id",
+        "fields": {
+          "eventName": "__my_messages__",
+          "args": [
+            {
+              "_id": "K8J4wv4rheS9X79Gx",
+              "rid": "K8J4wv4rheS9X79Gx",
+              "msg": "ty",
+              "ts": {
+                "$date": 1690648840317
+              },
+              "u": {
+                "_id": "u2bbopt3h5FESD4zd",
+                "username": "bill.gates",
+                "name": "Bill Gates"
+              },
+              "_updatedAt": {
+                "$date": 1690648840371
+              },
+              "urls": [],
+              "mentions": [],
+              "channels": [],
+              "md": [
+                {
+                  "type": "PARAGRAPH",
+                  "value": [
+                    {
+                      "type": "PLAIN_TEXT",
+                      "value": "hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "roomParticipant": true,
+              "roomType": "d"
+            }
+          ]
+        }
+      },
+      "trigger_msg": "sub", "timing": 2
+    }
+
+  ]
+}
