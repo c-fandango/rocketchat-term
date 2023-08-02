@@ -9,7 +9,8 @@ import os
 
 HOSTNAME = "localhost"
 WSS_PORT = 5550
-DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+BIN_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BIN_DIR, '../data')
 DATA_FILE = os.path.join(DATA_DIR, "ws_responses.json")
 
 
@@ -50,7 +51,7 @@ class WSResponse:
 async def main():
     ws_response = WSResponse(DATA_FILE)
 
-    async with websockets.serve(ws_response.serve, "127.0.0.1", WSS_PORT):
+    async with websockets.serve(ws_response.serve, HOSTNAME, WSS_PORT):
         await asyncio.Future()
 
 

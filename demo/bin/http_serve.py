@@ -6,7 +6,8 @@ import os
 
 HOSTNAME = "localhost"
 PORT = 5555
-DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+BIN_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BIN_DIR, '../data')
 DATA_FILE = os.path.join(DATA_DIR, "http_response.json")
 
 
