@@ -3,7 +3,7 @@
     {
       "response": {
         "msg": "connected",
-        "session": "tmKfASQJXviR8rrJw"
+        "session": "tmKfA4e5XviR8rrJw"
       },
       "trigger_msg": "connect"
     },
@@ -13,7 +13,7 @@
         "id": "QSagg",
         "result": {
           "id": "u2bbopt3h5FESD4zd",
-          "token": "f9OneYrBW4L5sMPlrFYVYlSh23qhZq63iAK-lyXU42z",
+          "token": "f9654397689534768945376897943753iAK-lyXU42z",
           "tokenExpires": {
             "$date": 1698424619586
           },
