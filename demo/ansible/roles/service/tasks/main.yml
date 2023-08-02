@@ -1,0 +1,15 @@
+- name: install service_file
+  template:
+    src: "{{ service_name }}.service"
+    dest: "{{ service_file_dest }}"
+    owner: root
+    group: root
+
+ 
+- name: enable and restart service
+  service: 
+    name: "{{ service_name }}"
+    enabled: yes
+    state: restarted
+    
+     

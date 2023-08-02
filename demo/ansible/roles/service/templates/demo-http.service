@@ -1,0 +1,14 @@
+[Unit]
+Description=Rocketchat-term demo
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{ demo_http_executable }}
+WorkingDirectory={{ demo_src_path }}
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+

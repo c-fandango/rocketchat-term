@@ -1,0 +1,3 @@
+haproxy_pems_dir: /etc/haproxy/pems
+haproxy_ssl_cert: "{{ haproxy_demo_cert }}"
+haproxy_config_template: demo.cfg

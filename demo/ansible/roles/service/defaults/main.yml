@@ -1,0 +1,2 @@
+service_name: "demo-http"
+service_file_dest: "/lib/systemd/system/{{ service_name }}.service"

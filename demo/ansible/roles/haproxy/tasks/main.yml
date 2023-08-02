@@ -1,0 +1,30 @@
+- name: Install haproxy
+  apt:
+    name: haproxy
+    state: present
+
+- name: ensure cert directory exists
+  file:
+    path: "{{ haproxy_pems_dir }}"
+    state: directory
+    group: nogroup
+    mode: 700
+
+- name: copy ssl certs
+  copy:
+    content: "{{ item.value }}"
+    dest: "{{ haproxy_pems_dir }}/{{ item.key }}" 
+  with_dict: "{{ haproxy_ssl_cert }}"
+  no_log: true
+
+- name: Install haproxy config
+  template:
+    src: "{{ haproxy_config_template }}"
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+
+- name: reload haproxy
+  service: 
+    name: haproxy
+    state: restarted

@@ -1,0 +1,5 @@
+haproxy_demo_cert: "{{ vault_haproxy_demo_cert }}"
+demo_src_path: /usr/share/demo
+demo_http_executable: "{{ demo_src_path }}/bin/http_serve.py"
+demo_ws_executable: "{{ demo_src_path }}/bin/ws_serve.py"
+demo_local_src_path: "{{ playbook_dir }}/.."

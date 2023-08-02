@@ -1,0 +1,46 @@
+- name: install rocketchat-term demo
+  gather_facts: true
+  become: true
+  hosts: all
+  tasks:
+      - name: update apt and install pip
+        apt:
+          name: python3-pip
+          update_cache: yes
+
+      - name: install dependenices
+        pip:
+          name: websockets
+
+      - name: set hostname
+        hostname:
+          name: "{{ inventory_hostname }}"
+
+      - name: install demo bin
+        copy: 
+          src: "{{ demo_local_src_path }}/bin"
+          dest: "{{ demo_src_path }}"
+          mode: preserve
+
+      - name: install demo data 
+        copy: 
+          src: "{{ demo_local_src_path }}/data"
+          dest: "{{ demo_src_path }}"
+          mode: preserve
+
+      - name: setup http server
+        include_role: 
+          name: service
+        vars:
+          service_name: demo-http
+
+      - name: setup ws server
+        include_role: 
+          name: service
+        vars:
+          service_name: demo-ws
+            
+
+      - name: setup haproxy
+        include_role: 
+          name: haproxy

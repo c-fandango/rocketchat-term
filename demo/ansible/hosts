@@ -1,0 +1,9 @@
+
+
+
+demo:
+  hosts:
+    demo-serve:
+      ansible_host: demo.cfandango.uk
+      ansible_user: ubuntu
+      
